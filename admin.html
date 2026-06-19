@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>จัดการพนักงาน - ระบบคำนวณ OT</title>
+<style>
+  :root {
+    --navy: #1e3a5f;
+    --navy-dark: #15293f;
+    --teal: #2a9d8f;
+    --teal-dark: #21807a;
+    --bg: #f4f7f9;
+    --card: #ffffff;
+    --text: #1f2937;
+    --text-soft: #6b7280;
+    --border: #e2e8f0;
+    --error: #d64545;
+    --error-bg: #fdecec;
+    --success: #1d8a4e;
+    --success-bg: #e7f7ee;
+    --radius: 10px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: 'Segoe UI', 'Noto Sans Thai', Tahoma, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+
+  header {
+    background: linear-gradient(120deg, var(--navy) 0%, var(--navy-dark) 100%);
+    color: #fff;
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  header .title { display: flex; align-items: center; gap: 10px; }
+  header .title .icon { font-size: 22px; }
+  header h1 { font-size: 17px; margin: 0; font-weight: 700; }
+  header .sub { font-size: 12px; color: #b9c6d6; margin-top: 2px; }
+
+  .who {
+    font-size: 13px;
+    color: #d7e2ee;
+  }
+
+  .logout-btn {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.25);
+    color: #fff;
+    padding: 7px 14px;
+    border-radius: 7px;
+    font-size: 13px;
+    cursor: pointer;
+    margin-left: 12px;
+  }
+  .logout-btn:hover { background: rgba(255,255,255,0.22); }
+
+  main {
+    max-width: 880px;
+    margin: 28px auto;
+    padding: 0 20px;
+  }
+
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .section-head h2 {
+    font-size: 18px;
+    margin: 0;
+    color: var(--navy);
+  }
+
+  .count-badge {
+    background: var(--teal);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 999px;
+  }
+
+  .refresh-btn {
+    background: #fff;
+    border: 1.5px solid var(--border);
+    color: var(--navy);
+    padding: 7px 14px;
+    border-radius: 7px;
+    font-size: 13px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .refresh-btn:hover { border-color: var(--teal); color: var(--teal-dark); }
+
+  .state-box {
+    background: var(--card);
+    border: 1.5px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--text-soft);
+    font-size: 14px;
+  }
+
+  .card-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .pending-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+  }
+
+  .pending-card .row1 {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .pending-card .name {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .pending-card .meta {
+    font-size: 12.5px;
+    color: var(--text-soft);
+    margin-top: 3px;
+  }
+
+  .role-pill {
+    display: inline-block;
+    background: #eef2f6;
+    color: var(--navy);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 999px;
+  }
+
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .controls label {
+    font-size: 12.5px;
+    color: var(--text-soft);
+    white-space: nowrap;
+  }
+
+  .controls select,
+  .controls input[type="text"] {
+    padding: 8px 10px;
+    border: 1.5px solid var(--border);
+    border-radius: 7px;
+    font-size: 13px;
+    font-family: inherit;
+    min-width: 140px;
+  }
+
+  .controls select:focus,
+  .controls input:focus {
+    outline: none;
+    border-color: var(--teal);
+  }
+
+  .actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .btn {
+    padding: 9px 16px;
+    border-radius: 7px;
+    border: none;
+    font-size: 13.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .btn:hover { opacity: 0.9; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .btn-approve { background: var(--teal); color: #fff; }
+  .btn-reject { background: #fff; color: var(--error); border: 1.5px solid var(--error); }
+
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--navy);
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+    max-width: 90vw;
+    text-align: center;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  .toast.error { background: var(--error); }
+  .toast.success { background: var(--success); }
+
+  .guard-box {
+    max-width: 420px;
+    margin: 80px auto;
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 32px 26px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  }
+  .guard-box h2 { color: var(--navy); margin-top: 0; }
+  .guard-box a {
+    display: inline-block;
+    margin-top: 14px;
+    background: var(--teal);
+    color: #fff;
+    text-decoration: none;
+    padding: 10px 20px;
+    border-radius: 7px;
+    font-weight: 700;
+    font-size: 14px;
+  }
+</style>
+</head>
+<body>
+
+<!-- กล่องแจ้งเตือนถ้ายังไม่ได้ login เป็น Admin จะแสดงตรงนี้แทนเนื้อหาหลัก -->
+<div class="guard-box" id="guardBox" style="display:none;">
+  <h2>ไม่มีสิทธิ์เข้าถึงหน้านี้</h2>
+  <p style="color:var(--text-soft); font-size:14px;">หน้านี้สำหรับ Admin เท่านั้น กรุณาเข้าสู่ระบบด้วยบัญชี Admin ก่อน</p>
+  <a href="index.html">ไปหน้าเข้าสู่ระบบ</a>
+</div>
+
+<div id="appContent" style="display:none;">
+  <header>
+    <div class="title">
+      <span class="icon">🛠️</span>
+      <div>
+        <h1>จัดการพนักงาน</h1>
+        <div class="sub">รายชื่อที่รออนุมัติเข้าใช้งานระบบ</div>
+      </div>
+    </div>
+    <div style="display:flex; align-items:center;">
+      <span class="who" id="whoAmI"></span>
+      <button class="logout-btn" id="logoutBtn">ออกจากระบบ</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="section-head">
+      <h2>รายชื่อรออนุมัติ <span class="count-badge" id="countBadge">0</span></h2>
+      <button class="refresh-btn" id="refreshBtn">↻ รีเฟรช</button>
+    </div>
+
+    <div id="listWrap">
+      <div class="state-box" id="loadingBox">กำลังโหลดรายชื่อ...</div>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const API_URL = 'https://script.google.com/macros/s/AKfycbwxUP6JF7JbJbIzAFPTnIt9LeWBfMe-qzwhn9j_7eEMHjJvlk0FKnh8wetF66Je7qJXaw/exec';
+
+  const KNOWN_ROLES = ['CM', 'CG', 'นักกายภาพ'];
+
+  // ===== ตรวจสอบสิทธิ์ก่อนแสดงเนื้อหา =====
+  const stored = sessionStorage.getItem('otSystemUser');
+  let currentUser = null;
+  try {
+    currentUser = stored ? JSON.parse(stored) : null;
+  } catch (e) {
+    currentUser = null;
+  }
+
+  if (!currentUser || currentUser.role !== 'Admin') {
+    document.getElementById('guardBox').style.display = 'block';
+  } else {
+    document.getElementById('appContent').style.display = 'block';
+    document.getElementById('whoAmI').textContent = 'Admin: ' + currentUser.name;
+    loadPendingUsers();
+  }
+
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    sessionStorage.removeItem('otSystemUser');
+    window.location.href = 'index.html';
+  });
+
+  document.getElementById('refreshBtn').addEventListener('click', loadPendingUsers);
+
+  // ===== โหลดรายชื่อรออนุมัติ =====
+  async function loadPendingUsers() {
+    const listWrap = document.getElementById('listWrap');
+    listWrap.innerHTML = '<div class="state-box" id="loadingBox">กำลังโหลดรายชื่อ...</div>';
+
+    try {
+      const result = await callApi({
+        action: 'getPendingUsers',
+        adminUsername: currentUser.username
+      });
+
+      if (!result.success) {
+        listWrap.innerHTML = '<div class="state-box">โหลดข้อมูลไม่สำเร็จ: ' + escapeHtml(result.message || '') + '</div>';
+        return;
+      }
+
+      renderList(result.pendingUsers || []);
+    } catch (err) {
+      listWrap.innerHTML = '<div class="state-box">เชื่อมต่อระบบไม่ได้ กรุณาลองใหม่ (' + escapeHtml(err.message) + ')</div>';
+    }
+  }
+
+  function renderList(users) {
+    document.getElementById('countBadge').textContent = users.length;
+    const listWrap = document.getElementById('listWrap');
+
+    if (users.length === 0) {
+      listWrap.innerHTML = '<div class="state-box">ไม่มีรายชื่อที่รออนุมัติในตอนนี้</div>';
+      return;
+    }
+
+    const html = '<div class="card-list">' + users.map(u => renderCard(u)).join('') + '</div>';
+    listWrap.innerHTML = html;
+
+    // ผูก event ให้แต่ละการ์ดหลัง render เสร็จ
+    users.forEach(u => {
+      const idSafe = String(u.id);
+      const select = document.getElementById('roleSelect-' + idSafe);
+      const otherInput = document.getElementById('roleOther-' + idSafe);
+
+      select.addEventListener('change', () => {
+        otherInput.style.display = select.value === '__other__' ? 'inline-block' : 'none';
+      });
+
+      document.getElementById('approveBtn-' + idSafe).addEventListener('click', () => {
+        let finalRole = select.value;
+        if (finalRole === '__other__') {
+          finalRole = otherInput.value.trim();
+          if (!finalRole) {
+            showToast('กรุณาระบุตำแหน่งก่อนอนุมัติ', 'error');
+            return;
+          }
+        }
+        handleApprove(u.id, finalRole);
+      });
+
+      document.getElementById('rejectBtn-' + idSafe).addEventListener('click', () => {
+        handleReject(u.id, u.name);
+      });
+    });
+  }
+
+  function renderCard(u) {
+    const idSafe = String(u.id);
+    const requestedRole = u.requestedRole || '';
+    const isKnown = KNOWN_ROLES.includes(requestedRole);
+
+    const optionsHtml = KNOWN_ROLES.map(r =>
+      '<option value="' + escapeHtml(r) + '"' + (r === requestedRole ? ' selected' : '') + '>' + escapeHtml(r) + '</option>'
+    ).join('') + '<option value="__other__"' + (!isKnown ? ' selected' : '') + '>อื่น ๆ (พิมพ์เอง)</option>';
+
+    const otherValue = !isKnown ? requestedRole : '';
+    const otherDisplay = !isKnown ? 'inline-block' : 'none';
+
+    return `
+      <div class="pending-card">
+        <div class="row1">
+          <div>
+            <div class="name">${escapeHtml(u.name)}</div>
+            <div class="meta">username: ${escapeHtml(u.username)} • ขอเป็น: <span class="role-pill">${escapeHtml(requestedRole)}</span></div>
+          </div>
+        </div>
+        <div class="controls">
+          <label for="roleSelect-${idSafe}">ยืนยันตำแหน่ง:</label>
+          <select id="roleSelect-${idSafe}">${optionsHtml}</select>
+          <input type="text" id="roleOther-${idSafe}" placeholder="พิมพ์ตำแหน่ง" value="${escapeHtml(otherValue)}" style="display:${otherDisplay};">
+        </div>
+        <div class="actions">
+          <button class="btn btn-approve" id="approveBtn-${idSafe}">✓ อนุมัติ</button>
+          <button class="btn btn-reject" id="rejectBtn-${idSafe}">✕ ปฏิเสธ</button>
+        </div>
+      </div>
+    `;
+  }
+
+  async function handleApprove(userId, confirmedRole) {
+    setCardButtonsDisabled(userId, true);
+    try {
+      const result = await callApi({
+        action: 'approveUser',
+        adminUsername: currentUser.username,
+        targetUserId: userId,
+        confirmedRole: confirmedRole
+      });
+
+      if (result.success) {
+        showToast('อนุมัติเรียบร้อยแล้ว', 'success');
+        loadPendingUsers();
+      } else {
+        showToast(result.message || 'อนุมัติไม่สำเร็จ', 'error');
+        setCardButtonsDisabled(userId, false);
+      }
+    } catch (err) {
+      showToast('เชื่อมต่อระบบไม่ได้ (' + err.message + ')', 'error');
+      setCardButtonsDisabled(userId, false);
+    }
+  }
+
+  async function handleReject(userId, name) {
+    const confirmed = confirm('ยืนยันปฏิเสธการสมัครของ "' + name + '" ?');
+    if (!confirmed) return;
+
+    setCardButtonsDisabled(userId, true);
+    try {
+      const result = await callApi({
+        action: 'rejectUser',
+        adminUsername: currentUser.username,
+        targetUserId: userId
+      });
+
+      if (result.success) {
+        showToast('ปฏิเสธเรียบร้อยแล้ว', 'success');
+        loadPendingUsers();
+      } else {
+        showToast(result.message || 'ดำเนินการไม่สำเร็จ', 'error');
+        setCardButtonsDisabled(userId, false);
+      }
+    } catch (err) {
+      showToast('เชื่อมต่อระบบไม่ได้ (' + err.message + ')', 'error');
+      setCardButtonsDisabled(userId, false);
+    }
+  }
+
+  function setCardButtonsDisabled(userId, disabled) {
+    const idSafe = String(userId);
+    const approveBtn = document.getElementById('approveBtn-' + idSafe);
+    const rejectBtn = document.getElementById('rejectBtn-' + idSafe);
+    if (approveBtn) approveBtn.disabled = disabled;
+    if (rejectBtn) rejectBtn.disabled = disabled;
+  }
+
+  // ===== Helpers =====
+  async function callApi(payload) {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      throw new Error('เซิร์ฟเวอร์ตอบกลับผิดพลาด (HTTP ' + res.status + ')');
+    }
+    return res.json();
+  }
+
+  let toastTimer = null;
+  function showToast(text, type) {
+    const el = document.getElementById('toast');
+    el.textContent = text;
+    el.className = 'toast show ' + (type || '');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      el.className = 'toast';
+    }, 3200);
+  }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+</script>
+
+</body>
+</html>
