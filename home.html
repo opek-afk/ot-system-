@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>หน้าหลัก - ระบบคำนวณ OT</title>
+<style>
+  :root {
+    --navy: #1e3a5f;
+    --navy-dark: #15293f;
+    --teal: #2a9d8f;
+    --teal-dark: #21807a;
+    --bg: #f4f7f9;
+    --card: #ffffff;
+    --text: #1f2937;
+    --text-soft: #6b7280;
+    --border: #e2e8f0;
+    --error: #d64545;
+    --error-bg: #fdecec;
+    --success: #1d8a4e;
+    --success-bg: #e7f7ee;
+    --radius: 12px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: 'Segoe UI', 'Noto Sans Thai', Tahoma, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+
+  header {
+    background: linear-gradient(120deg, var(--navy) 0%, var(--navy-dark) 100%);
+    color: #fff;
+    padding: 16px 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  header .title { display: flex; align-items: center; gap: 10px; }
+  header .title .icon { font-size: 22px; }
+  header h1 { font-size: 16px; margin: 0; font-weight: 700; }
+  header .sub { font-size: 12px; color: #b9c6d6; margin-top: 2px; }
+
+  .logout-btn {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.25);
+    color: #fff;
+    padding: 7px 14px;
+    border-radius: 7px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .logout-btn:hover { background: rgba(255,255,255,0.22); }
+
+  main {
+    max-width: 480px;
+    margin: 26px auto;
+    padding: 0 18px 40px;
+  }
+
+  .clock-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 24px 20px;
+    text-align: center;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+    margin-bottom: 18px;
+  }
+
+  .clock-card .date-label {
+    font-size: 13px;
+    color: var(--text-soft);
+    margin-bottom: 6px;
+  }
+
+  .clock-card .clock-time {
+    font-size: 42px;
+    font-weight: 800;
+    color: var(--navy);
+    letter-spacing: 1px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .status-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 22px 20px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+    margin-bottom: 18px;
+    text-align: center;
+  }
+
+  .status-line {
+    font-size: 13.5px;
+    color: var(--text-soft);
+    margin-bottom: 16px;
+    min-height: 18px;
+  }
+
+  .status-line.working {
+    color: var(--success);
+    font-weight: 600;
+  }
+
+  .punch-btn {
+    width: 100%;
+    padding: 18px 0;
+    border: none;
+    border-radius: 10px;
+    font-size: 18px;
+    font-weight: 800;
+    cursor: pointer;
+    color: #fff;
+    transition: opacity 0.15s, transform 0.05s;
+  }
+  .punch-btn:hover { opacity: 0.92; }
+  .punch-btn:active { transform: scale(0.99); }
+  .punch-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+  .punch-btn.checkin { background: var(--teal); }
+  .punch-btn.checkout { background: var(--error); }
+
+  .shift-picker {
+    margin-bottom: 16px;
+    display: none;
+  }
+  .shift-picker.show { display: block; }
+
+  .shift-picker .label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 8px;
+    text-align: left;
+  }
+
+  .shift-options {
+    display: flex;
+    gap: 10px;
+  }
+
+  .shift-option {
+    flex: 1;
+    padding: 12px 8px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    background: #fff;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-soft);
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
+  }
+
+  .shift-option.selected {
+    border-color: var(--teal);
+    background: #effaf8;
+    color: var(--teal-dark);
+  }
+
+  .msg {
+    margin-top: 14px;
+    padding: 10px 13px;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.5;
+    display: none;
+    text-align: left;
+  }
+  .msg.show { display: block; }
+  .msg.error { background: var(--error-bg); color: var(--error); }
+  .msg.success { background: var(--success-bg); color: var(--success); }
+
+  .history-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 18px 20px 20px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+  }
+
+  .history-card h2 {
+    font-size: 14.5px;
+    color: var(--navy);
+    margin: 0 0 12px;
+  }
+
+  .history-empty {
+    font-size: 13px;
+    color: var(--text-soft);
+    text-align: center;
+    padding: 14px 0;
+  }
+
+  .history-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13.5px;
+  }
+  .history-row:last-child { border-bottom: none; }
+
+  .history-row .shift-tag {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #eef2f6;
+    color: var(--navy);
+    margin-right: 8px;
+  }
+
+  .history-row .times {
+    color: var(--text);
+  }
+  .history-row .times .open {
+    color: var(--teal-dark);
+    font-weight: 600;
+  }
+
+  .guard-box {
+    max-width: 420px;
+    margin: 80px auto;
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 32px 26px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  }
+  .guard-box h2 { color: var(--navy); margin-top: 0; }
+  .guard-box a {
+    display: inline-block;
+    margin-top: 14px;
+    background: var(--teal);
+    color: #fff;
+    text-decoration: none;
+    padding: 10px 20px;
+    border-radius: 7px;
+    font-weight: 700;
+    font-size: 14px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="guard-box" id="guardBox" style="display:none;">
+  <h2>กรุณาเข้าสู่ระบบ</h2>
+  <p style="color:var(--text-soft); font-size:14px;">คุณยังไม่ได้เข้าสู่ระบบ หรือ session หมดอายุ</p>
+  <a href="index.html">ไปหน้าเข้าสู่ระบบ</a>
+</div>
+
+<div id="appContent" style="display:none;">
+  <header>
+    <div class="title">
+      <span class="icon">🏠</span>
+      <div>
+        <h1 id="greetingName">หน้าหลัก</h1>
+        <div class="sub" id="greetingRole"></div>
+      </div>
+    </div>
+    <button class="logout-btn" id="logoutBtn">ออกจากระบบ</button>
+  </header>
+
+  <main>
+    <!-- นาฬิกาแบบ real-time -->
+    <div class="clock-card">
+      <div class="date-label" id="dateLabel">—</div>
+      <div class="clock-time" id="clockTime">--:--:--</div>
+    </div>
+
+    <!-- การ์ดลงเวลา -->
+    <div class="status-card">
+      <div class="status-line" id="statusLine">กำลังตรวจสอบสถานะ...</div>
+
+      <!-- เลือกรอบเวร (โชว์เฉพาะตอนจะกดเข้างาน) -->
+      <div class="shift-picker" id="shiftPicker">
+        <div class="label">เลือกรอบเวร</div>
+        <div class="shift-options">
+          <button type="button" class="shift-option" data-shift="เช้า">☀️ เช้า</button>
+          <button type="button" class="shift-option" data-shift="กลางคืน">🌙 กลางคืน</button>
+        </div>
+      </div>
+
+      <button class="punch-btn checkin" id="punchBtn" disabled>กำลังโหลด...</button>
+      <div class="msg" id="punchMsg"></div>
+    </div>
+
+    <!-- ประวัติวันนี้ -->
+    <div class="history-card">
+      <h2>ประวัติการลงเวลาวันนี้</h2>
+      <div id="historyWrap">
+        <div class="history-empty">กำลังโหลด...</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  const API_URL = 'https://script.google.com/macros/s/AKfycbwxUP6JF7JbJbIzAFPTnIt9LeWBfMe-qzwhn9j_7eEMHjJvlk0FKnh8wetF66Je7qJXaw/exec';
+
+  // ===== ตรวจสอบสิทธิ์ก่อนแสดงเนื้อหา =====
+  const stored = sessionStorage.getItem('otSystemUser');
+  let currentUser = null;
+  try {
+    currentUser = stored ? JSON.parse(stored) : null;
+  } catch (e) {
+    currentUser = null;
+  }
+
+  if (!currentUser) {
+    document.getElementById('guardBox').style.display = 'block';
+  } else {
+    document.getElementById('appContent').style.display = 'block';
+    document.getElementById('greetingName').textContent = 'สวัสดี ' + currentUser.name;
+    document.getElementById('greetingRole').textContent = 'ตำแหน่ง: ' + currentUser.role;
+    startClock();
+    loadStatus();
+  }
+
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    sessionStorage.removeItem('otSystemUser');
+    window.location.href = 'index.html';
+  });
+
+  // ===== นาฬิกาเดินตลอดเวลา =====
+  const THAI_DAYS = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+  const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+
+  function startClock() {
+    updateClock();
+    setInterval(updateClock, 1000);
+  }
+
+  function updateClock() {
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mm = String(now.getMinutes()).padStart(2, '0');
+    const ss = String(now.getSeconds()).padStart(2, '0');
+    document.getElementById('clockTime').textContent = `${hh}:${mm}:${ss}`;
+
+    const dayName = THAI_DAYS[now.getDay()];
+    const monthName = THAI_MONTHS[now.getMonth()];
+    const buddhistYear = now.getFullYear() + 543;
+    document.getElementById('dateLabel').textContent =
+      `วัน${dayName}ที่ ${now.getDate()} ${monthName} ${buddhistYear}`;
+  }
+
+  // ===== สถานะลงเวลา =====
+  let isCheckedIn = false;
+  let selectedShift = null;
+
+  const punchBtn = document.getElementById('punchBtn');
+  const statusLine = document.getElementById('statusLine');
+  const shiftPicker = document.getElementById('shiftPicker');
+  const shiftOptions = document.querySelectorAll('.shift-option');
+
+  shiftOptions.forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedShift = btn.dataset.shift;
+      shiftOptions.forEach(b => b.classList.toggle('selected', b === btn));
+      punchBtn.disabled = false;
+    });
+  });
+
+  async function loadStatus() {
+    punchBtn.disabled = true;
+    punchBtn.textContent = 'กำลังโหลด...';
+    statusLine.textContent = 'กำลังตรวจสอบสถานะ...';
+    statusLine.className = 'status-line';
+
+    try {
+      const result = await callApi({ action: 'getTodayStatus', userId: currentUser.id });
+
+      if (!result.success) {
+        statusLine.textContent = 'โหลดสถานะไม่สำเร็จ: ' + (result.message || '');
+        return;
+      }
+
+      isCheckedIn = result.isCheckedIn;
+      renderPunchUi();
+      renderHistory(result.todayRecords || []);
+    } catch (err) {
+      statusLine.textContent = 'เชื่อมต่อระบบไม่ได้ (' + err.message + ')';
+    }
+  }
+
+  function renderPunchUi() {
+    if (isCheckedIn) {
+      statusLine.textContent = '🟢 ขณะนี้คุณกำลังทำงานอยู่';
+      statusLine.className = 'status-line working';
+      shiftPicker.classList.remove('show');
+      punchBtn.className = 'punch-btn checkout';
+      punchBtn.textContent = 'ออกงาน';
+      punchBtn.disabled = false;
+    } else {
+      statusLine.textContent = 'คุณยังไม่ได้เข้างานในรอบนี้';
+      statusLine.className = 'status-line';
+      shiftPicker.classList.add('show');
+      punchBtn.className = 'punch-btn checkin';
+      punchBtn.textContent = 'เข้างาน';
+      // เคลียร์การเลือกรอบเวรเดิมทุกครั้งที่กลับมาสถานะนี้ ปุ่มจะ disabled จนกว่าจะเลือกรอบ
+      selectedShift = null;
+      shiftOptions.forEach(b => b.classList.remove('selected'));
+      punchBtn.disabled = true;
+    }
+  }
+
+  punchBtn.addEventListener('click', async () => {
+    hideMsg();
+    punchBtn.disabled = true;
+    const originalText = punchBtn.textContent;
+    punchBtn.textContent = 'กำลังบันทึก...';
+
+    try {
+      let result;
+      if (isCheckedIn) {
+        result = await callApi({ action: 'checkOut', userId: currentUser.id });
+      } else {
+        result = await callApi({ action: 'checkIn', userId: currentUser.id, shift: selectedShift });
+      }
+
+      if (result.success) {
+        showMsg(result.message, 'success');
+        await loadStatus();
+      } else {
+        showMsg(result.message || 'ดำเนินการไม่สำเร็จ', 'error');
+        punchBtn.disabled = false;
+        punchBtn.textContent = originalText;
+      }
+    } catch (err) {
+      showMsg('เชื่อมต่อระบบไม่ได้ (' + err.message + ')', 'error');
+      punchBtn.disabled = false;
+      punchBtn.textContent = originalText;
+    }
+  });
+
+  function renderHistory(records) {
+    const wrap = document.getElementById('historyWrap');
+
+    if (!records || records.length === 0) {
+      wrap.innerHTML = '<div class="history-empty">วันนี้ยังไม่มีการลงเวลา</div>';
+      return;
+    }
+
+    wrap.innerHTML = records.map(r => {
+      const checkOutDisplay = r.checkOut
+        ? r.checkOut
+        : '<span class="open">กำลังทำงาน</span>';
+      return `
+        <div class="history-row">
+          <span><span class="shift-tag">${escapeHtml(r.shift || '-')}</span></span>
+          <span class="times">${escapeHtml(r.checkIn)} – ${checkOutDisplay}</span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // ===== Helpers =====
+  async function callApi(payload) {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      throw new Error('เซิร์ฟเวอร์ตอบกลับผิดพลาด (HTTP ' + res.status + ')');
+    }
+    return res.json();
+  }
+
+  function showMsg(text, type) {
+    const el = document.getElementById('punchMsg');
+    el.textContent = text;
+    el.className = 'msg show ' + type;
+  }
+  function hideMsg() {
+    const el = document.getElementById('punchMsg');
+    el.className = 'msg';
+    el.textContent = '';
+  }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+</script>
+
+</body>
+</html>
