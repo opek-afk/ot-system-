@@ -373,8 +373,7 @@
           setTimeout(() => { window.location.href = 'admin.html'; }, 600);
         } else {
           showMsg('loginMsg', 'เข้าสู่ระบบสำเร็จ! กำลังนำไปยังหน้าหลัก...', 'success');
-          // TODO: เปลี่ยนเป็น redirect ไปหน้าแรกของระบบสำหรับ CM/CG/นักกายภาพ เมื่อสร้างหน้านั้นเสร็จแล้ว
-          // window.location.href = 'home.html';
+          setTimeout(() => { window.location.href = 'home.html'; }, 600);
         }
       } else {
         showMsg('loginMsg', result.message || 'เข้าสู่ระบบไม่สำเร็จ', 'error');
