@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ระบบคำนวณ OT - เข้าสู่ระบบ</title>
+<style>
+  :root {
+    --navy: #1e3a5f;
+    --navy-dark: #15293f;
+    --teal: #2a9d8f;
+    --teal-dark: #21807a;
+    --bg: #f4f7f9;
+    --card: #ffffff;
+    --text: #1f2937;
+    --text-soft: #6b7280;
+    --border: #e2e8f0;
+    --error: #d64545;
+    --error-bg: #fdecec;
+    --success: #1d8a4e;
+    --success-bg: #e7f7ee;
+    --pending-bg: #fff7e6;
+    --pending: #b8860b;
+    --radius: 10px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: 'Segoe UI', 'Noto Sans Thai', Tahoma, sans-serif;
+    background: linear-gradient(160deg, var(--navy) 0%, var(--navy-dark) 45%, #0f1f33 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .wrap {
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .brand {
+    text-align: center;
+    margin-bottom: 22px;
+    color: #ffffff;
+  }
+
+  .brand .icon {
+    font-size: 34px;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+
+  .brand h1 {
+    font-size: 20px;
+    margin: 0 0 4px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+  }
+
+  .brand p {
+    margin: 0;
+    font-size: 13px;
+    color: #b9c6d6;
+  }
+
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: 0 18px 40px rgba(0,0,0,0.25);
+    overflow: hidden;
+  }
+
+  .tabs {
+    display: flex;
+  }
+
+  .tab-btn {
+    flex: 1;
+    border: none;
+    background: #eef2f6;
+    color: var(--text-soft);
+    font-size: 15px;
+    font-weight: 600;
+    padding: 16px 0;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .tab-btn.active {
+    background: var(--card);
+    color: var(--navy);
+    box-shadow: inset 0 -3px 0 var(--teal);
+  }
+
+  .tab-btn:focus-visible {
+    outline: 2px solid var(--teal);
+    outline-offset: -2px;
+  }
+
+  .panel {
+    padding: 28px 26px 30px;
+  }
+
+  .panel.hidden { display: none; }
+
+  .field {
+    margin-bottom: 16px;
+  }
+
+  .field label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .field input,
+  .field select {
+    width: 100%;
+    padding: 11px 13px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--text);
+    background: #fff;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    font-family: inherit;
+  }
+
+  .field input:focus,
+  .field select:focus {
+    outline: none;
+    border-color: var(--teal);
+    box-shadow: 0 0 0 3px rgba(42,157,143,0.15);
+  }
+
+  .role-other {
+    margin-top: 8px;
+  }
+  .role-other.hidden { display: none; }
+
+  .submit-btn {
+    width: 100%;
+    padding: 12px 0;
+    border: none;
+    border-radius: 8px;
+    background: var(--teal);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.05s;
+    margin-top: 6px;
+  }
+
+  .submit-btn:hover { background: var(--teal-dark); }
+  .submit-btn:active { transform: scale(0.99); }
+  .submit-btn:disabled {
+    background: #a8b3bd;
+    cursor: not-allowed;
+  }
+
+  .submit-btn:focus-visible {
+    outline: 2px solid var(--navy);
+    outline-offset: 2px;
+  }
+
+  .msg {
+    margin-top: 14px;
+    padding: 11px 13px;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.5;
+    display: none;
+  }
+
+  .msg.show { display: block; }
+  .msg.error { background: var(--error-bg); color: var(--error); }
+  .msg.success { background: var(--success-bg); color: var(--success); }
+  .msg.pending { background: var(--pending-bg); color: var(--pending); }
+
+  .hint {
+    font-size: 12px;
+    color: var(--text-soft);
+    margin-top: 18px;
+    text-align: center;
+    line-height: 1.6;
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: -2px;
+    margin-right: 6px;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .spinner { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="brand">
+    <div class="icon">🕒</div>
+    <h1>ระบบคำนวณ OT</h1>
+    <p>เข้าสู่ระบบเพื่อบันทึกเวลาทำงานและ OT</p>
+  </div>
+
+  <div class="card">
+    <div class="tabs">
+      <button type="button" class="tab-btn active" id="tabLoginBtn">เข้าสู่ระบบ</button>
+      <button type="button" class="tab-btn" id="tabRegisterBtn">สมัครสมาชิก</button>
+    </div>
+
+    <!-- ===== LOGIN PANEL ===== -->
+    <div class="panel" id="loginPanel">
+      <form id="loginForm" novalidate>
+        <div class="field">
+          <label for="loginUsername">ชื่อผู้ใช้ (Username)</label>
+          <input type="text" id="loginUsername" autocomplete="username" required>
+        </div>
+        <div class="field">
+          <label for="loginPassword">รหัสผ่าน</label>
+          <input type="password" id="loginPassword" autocomplete="current-password" required>
+        </div>
+        <button type="submit" class="submit-btn" id="loginSubmitBtn">เข้าสู่ระบบ</button>
+        <div class="msg" id="loginMsg"></div>
+      </form>
+    </div>
+
+    <!-- ===== REGISTER PANEL ===== -->
+    <div class="panel hidden" id="registerPanel">
+      <form id="registerForm" novalidate>
+        <div class="field">
+          <label for="regName">ชื่อ-นามสกุล</label>
+          <input type="text" id="regName" autocomplete="name" required>
+        </div>
+        <div class="field">
+          <label for="regUsername">ชื่อผู้ใช้ (Username)</label>
+          <input type="text" id="regUsername" autocomplete="username" required>
+        </div>
+        <div class="field">
+          <label for="regPassword">รหัสผ่าน</label>
+          <input type="password" id="regPassword" autocomplete="new-password" required minlength="6">
+        </div>
+        <div class="field">
+          <label for="regRole">ตำแหน่ง (Role)</label>
+          <select id="regRole" required>
+            <option value="" disabled selected>เลือกตำแหน่งของคุณ</option>
+            <option value="CM">CM (ผู้จัดการ)</option>
+            <option value="CG">CG</option>
+            <option value="นักกายภาพ">นักกายภาพ</option>
+            <option value="__other__">อื่น ๆ (พิมพ์เอง)</option>
+          </select>
+          <div class="role-other hidden" id="roleOtherWrap">
+            <input type="text" id="regRoleOther" placeholder="ระบุตำแหน่งของคุณ">
+          </div>
+        </div>
+        <button type="submit" class="submit-btn" id="registerSubmitBtn">สมัครสมาชิก</button>
+        <div class="msg" id="registerMsg"></div>
+      </form>
+    </div>
+  </div>
+
+  <p class="hint">
+    หลังสมัครสมาชิก บัญชีของคุณจะอยู่ในสถานะ "รออนุมัติ"<br>
+    กรุณารอ Admin ตรวจสอบและอนุมัติก่อนเข้าใช้งาน
+  </p>
+</div>
+
+<script>
+  // ===== ตั้งค่า URL ของ Apps Script Web App ที่ deploy ไว้ =====
+  const API_URL = 'https://script.google.com/macros/s/AKfycbwxUP6JF7JbJbIzAFPTnIt9LeWBfMe-qzwhn9j_7eEMHjJvlk0FKnh8wetF66Je7qJXaw/exec';
+
+  // ----- สลับแท็บ Login / สมัครสมาชิก -----
+  const tabLoginBtn = document.getElementById('tabLoginBtn');
+  const tabRegisterBtn = document.getElementById('tabRegisterBtn');
+  const loginPanel = document.getElementById('loginPanel');
+  const registerPanel = document.getElementById('registerPanel');
+
+  tabLoginBtn.addEventListener('click', () => switchTab('login'));
+  tabRegisterBtn.addEventListener('click', () => switchTab('register'));
+
+  function switchTab(target) {
+    const isLogin = target === 'login';
+    tabLoginBtn.classList.toggle('active', isLogin);
+    tabRegisterBtn.classList.toggle('active', !isLogin);
+    loginPanel.classList.toggle('hidden', !isLogin);
+    registerPanel.classList.toggle('hidden', isLogin);
+    hideMsg('loginMsg');
+    hideMsg('registerMsg');
+  }
+
+  // ----- แสดง/ซ่อนช่องพิมพ์ตำแหน่งเอง -----
+  const regRole = document.getElementById('regRole');
+  const roleOtherWrap = document.getElementById('roleOtherWrap');
+  const regRoleOther = document.getElementById('regRoleOther');
+
+  regRole.addEventListener('change', () => {
+    const isOther = regRole.value === '__other__';
+    roleOtherWrap.classList.toggle('hidden', !isOther);
+    regRoleOther.required = isOther;
+  });
+
+  // ----- Helper แสดงข้อความ -----
+  function showMsg(elId, text, type) {
+    const el = document.getElementById(elId);
+    el.textContent = text;
+    el.className = 'msg show ' + type;
+  }
+  function hideMsg(elId) {
+    const el = document.getElementById(elId);
+    el.className = 'msg';
+    el.textContent = '';
+  }
+
+  // ----- เรียก API ของ Apps Script -----
+  async function callApi(payload) {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // กัน CORS preflight ของ Apps Script
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      throw new Error('เซิร์ฟเวอร์ตอบกลับผิดพลาด (HTTP ' + res.status + ')');
+    }
+    return res.json();
+  }
+
+  // ===== LOGIN =====
+  const loginForm = document.getElementById('loginForm');
+  const loginSubmitBtn = document.getElementById('loginSubmitBtn');
+
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideMsg('loginMsg');
+
+    const username = document.getElementById('loginUsername').value.trim();
+    const password = document.getElementById('loginPassword').value;
+
+    if (!username || !password) {
+      showMsg('loginMsg', 'กรุณากรอกชื่อผู้ใช้และรหัสผ่าน', 'error');
+      return;
+    }
+
+    setLoading(loginSubmitBtn, true, 'กำลังเข้าสู่ระบบ...');
+
+    try {
+      const result = await callApi({ action: 'login', username, password });
+
+      if (result.success) {
+        showMsg('loginMsg', 'เข้าสู่ระบบสำเร็จ! กำลังนำไปยังหน้าหลัก...', 'success');
+        // เก็บข้อมูลผู้ใช้ไว้ใช้ในหน้าอื่น ๆ ของระบบ
+        sessionStorage.setItem('otSystemUser', JSON.stringify(result.user));
+        // TODO: เปลี่ยนเป็น redirect ไปหน้าแรกของระบบ เมื่อสร้างหน้านั้นเสร็จแล้ว
+        // window.location.href = 'home.html';
+      } else {
+        showMsg('loginMsg', result.message || 'เข้าสู่ระบบไม่สำเร็จ', 'error');
+      }
+    } catch (err) {
+      showMsg('loginMsg', 'เชื่อมต่อระบบไม่ได้ กรุณาลองใหม่ (' + err.message + ')', 'error');
+    } finally {
+      setLoading(loginSubmitBtn, false, 'เข้าสู่ระบบ');
+    }
+  });
+
+  // ===== REGISTER =====
+  const registerForm = document.getElementById('registerForm');
+  const registerSubmitBtn = document.getElementById('registerSubmitBtn');
+
+  registerForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideMsg('registerMsg');
+
+    const name = document.getElementById('regName').value.trim();
+    const username = document.getElementById('regUsername').value.trim();
+    const password = document.getElementById('regPassword').value;
+    let role = regRole.value;
+
+    if (role === '__other__') {
+      role = regRoleOther.value.trim();
+    }
+
+    if (!name || !username || !password || !role) {
+      showMsg('registerMsg', 'กรุณากรอกข้อมูลให้ครบทุกช่อง', 'error');
+      return;
+    }
+    if (password.length < 6) {
+      showMsg('registerMsg', 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร', 'error');
+      return;
+    }
+
+    setLoading(registerSubmitBtn, true, 'กำลังสมัครสมาชิก...');
+
+    try {
+      const result = await callApi({ action: 'register', username, password, name, role });
+
+      if (result.success) {
+        showMsg('registerMsg', result.message || 'สมัครสมาชิกสำเร็จ กรุณารอ Admin อนุมัติ', 'pending');
+        registerForm.reset();
+        roleOtherWrap.classList.add('hidden');
+      } else {
+        showMsg('registerMsg', result.message || 'สมัครสมาชิกไม่สำเร็จ', 'error');
+      }
+    } catch (err) {
+      showMsg('registerMsg', 'เชื่อมต่อระบบไม่ได้ กรุณาลองใหม่ (' + err.message + ')', 'error');
+    } finally {
+      setLoading(registerSubmitBtn, false, 'สมัครสมาชิก');
+    }
+  });
+
+  function setLoading(btn, isLoading, label) {
+    btn.disabled = isLoading;
+    btn.innerHTML = isLoading ? '<span class="spinner"></span>' + label : label;
+  }
+</script>
+
+</body>
+</html>
