@@ -319,21 +319,6 @@
     currentUser = null;
   }
 
-  if (!currentUser) {
-    document.getElementById('guardBox').style.display = 'block';
-  } else {
-    document.getElementById('appContent').style.display = 'block';
-    document.getElementById('greetingName').textContent = 'สวัสดี ' + currentUser.name;
-    document.getElementById('greetingRole').textContent = 'ตำแหน่ง: ' + currentUser.role;
-    startClock();
-    loadStatus();
-  }
-
-  document.getElementById('logoutBtn').addEventListener('click', () => {
-    sessionStorage.removeItem('otSystemUser');
-    window.location.href = 'index.html';
-  });
-
   // ===== นาฬิกาเดินตลอดเวลา =====
   const THAI_DAYS = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
   const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
@@ -356,6 +341,21 @@
     document.getElementById('dateLabel').textContent =
       `วัน${dayName}ที่ ${now.getDate()} ${monthName} ${buddhistYear}`;
   }
+
+  if (!currentUser) {
+    document.getElementById('guardBox').style.display = 'block';
+  } else {
+    document.getElementById('appContent').style.display = 'block';
+    document.getElementById('greetingName').textContent = 'สวัสดี ' + currentUser.name;
+    document.getElementById('greetingRole').textContent = 'ตำแหน่ง: ' + currentUser.role;
+    startClock();
+    loadStatus();
+  }
+
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    sessionStorage.removeItem('otSystemUser');
+    window.location.href = 'index.html';
+  });
 
   // ===== สถานะลงเวลา =====
   let isCheckedIn = false;
