@@ -562,10 +562,137 @@
 
   // ===== Export Functions =====
 
-  function exportPDF() {
-    window.print();
+  function getPeriodLabel(month, year) {
+    const thaiYear = Number(year) + 543;
+    return month ? `${THAI_MONTHS[Number(month) - 1]} พ.ศ. ${thaiYear}` : `ปี พ.ศ. ${thaiYear}`;
   }
 
+  // ===== PDF — เปิดหน้าต่างเอกสารทางการแล้วให้ Print เป็น PDF =====
+  function exportPDF() {
+    if (!lastRecords || lastRecords.length === 0) {
+      alert('ไม่มีข้อมูลสำหรับ export ในช่วงเวลานี้ครับ');
+      return;
+    }
+
+    const month = currentMode === 'month' ? document.getElementById('filterMonth').value : null;
+    const year = document.getElementById('filterYear').value;
+    const periodLabel = getPeriodLabel(month, year);
+
+    // สร้างตาราง type summary
+    const typeMap = {};
+    lastRecords.forEach(r => {
+      if (!typeMap[r.otType]) typeMap[r.otType] = { total: 0, count: 0 };
+      typeMap[r.otType].total += Number(r.total) || 0;
+      typeMap[r.otType].count++;
+    });
+
+    const typeSummaryRows = Object.entries(typeMap)
+      .sort((a, b) => b[1].total - a[1].total)
+      .map(([type, val]) => `
+        <tr>
+          <td>${type}</td>
+          <td style="text-align:center">${val.count} รายการ</td>
+          <td style="text-align:right">${formatMoney(val.total)}</td>
+        </tr>
+      `).join('');
+
+    // สร้างตารางรายการทั้งหมด
+    const sorted = [...lastRecords].sort((a, b) => new Date(a.date) - new Date(b.date));
+    const detailRows = sorted.map((r, i) => {
+      const calcNote = r.hours > 0 ? `${r.hours} ชม. × ${formatMoney(r.rate)} บาท` : `${formatMoney(r.rate)} บาท/ครั้ง`;
+      return `
+        <tr>
+          <td style="text-align:center">${i + 1}</td>
+          <td>${r.date}</td>
+          <td>${r.otType}</td>
+          <td>${calcNote}</td>
+          <td style="text-align:right;font-weight:600">${formatMoney(r.total)}</td>
+        </tr>
+      `;
+    }).join('');
+
+    const printContent = `<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>สรุป OT — ${currentUser.name}</title>
+<style>
+  @page { size: A4; margin: 2cm 2cm 2.5cm 2cm; }
+  body { font-family: 'TH Sarabun New', 'Sarabun', 'Noto Sans Thai', Arial, sans-serif; font-size: 14pt; color: #000; margin: 0; }
+  .doc-header { text-align: center; margin-bottom: 18px; border-bottom: 2px solid #1e3a5f; padding-bottom: 12px; }
+  .doc-header h1 { font-size: 18pt; font-weight: bold; margin: 0 0 4px; color: #1e3a5f; }
+  .doc-header h2 { font-size: 15pt; font-weight: bold; margin: 0 0 4px; }
+  .doc-header p { font-size: 12pt; margin: 2px 0; color: #444; }
+  .info-row { display: flex; justify-content: space-between; margin-bottom: 14px; font-size: 12pt; }
+  .info-row span { color: #333; }
+  .section-title { font-size: 13pt; font-weight: bold; color: #1e3a5f; margin: 16px 0 6px; border-left: 4px solid #2a9d8f; padding-left: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12pt; margin-bottom: 16px; }
+  thead tr { background-color: #1e3a5f; color: #fff; }
+  thead th { padding: 8px 10px; text-align: left; font-weight: bold; }
+  tbody tr:nth-child(even) { background-color: #f4f7f9; }
+  tbody td { padding: 7px 10px; border-bottom: 1px solid #ddd; }
+  tfoot tr { background-color: #eef6f5; font-weight: bold; }
+  tfoot td { padding: 8px 10px; border-top: 2px solid #2a9d8f; }
+  .grand-box { margin-top: 10px; padding: 12px 16px; background: #1e3a5f; color: #fff; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; }
+  .grand-box .label { font-size: 13pt; }
+  .grand-box .amount { font-size: 18pt; font-weight: bold; }
+  .sign-area { margin-top: 40px; display: flex; justify-content: space-between; }
+  .sign-box { text-align: center; width: 200px; }
+  .sign-box .line { border-top: 1px solid #000; margin-top: 50px; padding-top: 4px; font-size: 11pt; }
+  .footer-note { margin-top: 20px; font-size: 10pt; color: #888; text-align: center; }
+</style>
+</head>
+<body>
+  <div class="doc-header">
+    <h1>ใบสรุปค่าตอบแทนการทำงานล่วงเวลา (OT)</h1>
+    <h2>${currentUser.name}</h2>
+    <p>ตำแหน่ง: ${currentUser.role} &nbsp;|&nbsp; ช่วงเวลา: ${periodLabel}</p>
+  </div>
+
+  <div class="info-row">
+    <span>ชื่อ-นามสกุล: <strong>${currentUser.name}</strong></span>
+    <span>จำนวนรายการ: <strong>${lastRecords.length} รายการ</strong></span>
+  </div>
+
+  <div class="section-title">สรุปตามประเภท OT</div>
+  <table>
+    <thead><tr><th>ประเภท OT</th><th style="text-align:center">จำนวนรายการ</th><th style="text-align:right">ยอดรวม (บาท)</th></tr></thead>
+    <tbody>${typeSummaryRows}</tbody>
+    <tfoot><tr><td>รวมทั้งหมด</td><td></td><td style="text-align:right">${formatMoney(lastGrandTotal)}</td></tr></tfoot>
+  </table>
+
+  <div class="section-title">รายการทั้งหมด</div>
+  <table>
+    <thead><tr><th style="text-align:center;width:40px">ที่</th><th>วันที่</th><th>ประเภท OT</th><th>การคำนวณ</th><th style="text-align:right">ยอด (บาท)</th></tr></thead>
+    <tbody>${detailRows}</tbody>
+  </table>
+
+  <div class="grand-box">
+    <span class="label">ยอดรวม OT ทั้งหมด — ${periodLabel}</span>
+    <span class="amount">${formatMoney(lastGrandTotal)} บาท</span>
+  </div>
+
+  <div class="sign-area">
+    <div class="sign-box">
+      <div class="line">ลายมือชื่อพนักงาน<br>(${currentUser.name})</div>
+    </div>
+    <div class="sign-box">
+      <div class="line">ลายมือชื่อผู้อนุมัติ<br>(.........................)</div>
+    </div>
+  </div>
+
+  <div class="footer-note">เอกสารนี้ออกโดยระบบคำนวณ OT — วันที่พิมพ์: ${new Date().toLocaleDateString('th-TH', {year:'numeric',month:'long',day:'numeric'})}</div>
+
+  <script>window.onload = function(){ window.print(); }<\/script>
+</body>
+</html>`;
+
+    const win = window.open('', '_blank');
+    win.document.write(printContent);
+    win.document.close();
+  }
+
+  // ===== Excel — จัดรูปแบบเป็นทางการ มีหัวเอกสาร สี ตัวหนา =====
   function exportExcel() {
     if (!lastRecords || lastRecords.length === 0) {
       alert('ไม่มีข้อมูลสำหรับ export ในช่วงเวลานี้ครับ');
@@ -575,39 +702,60 @@
     const month = currentMode === 'month' ? document.getElementById('filterMonth').value : null;
     const year = document.getElementById('filterYear').value;
     const thaiYear = Number(year) + 543;
-    const periodLabel = month ? `${THAI_MONTHS[Number(month) - 1]}_${thaiYear}` : `ปี_${thaiYear}`;
-    const fileName = `OT_${currentUser.name}_${periodLabel}.xlsx`;
+    const periodLabel = getPeriodLabel(month, year);
+    const periodFile = month ? `${THAI_MONTHS[Number(month) - 1]}_${thaiYear}` : `ปี_${thaiYear}`;
+    const fileName = `OT_${currentUser.name}_${periodFile}.xlsx`;
+
+    const wb = XLSX.utils.book_new();
 
     // สร้าง worksheet data
     const wsData = [
-      [`สรุป OT — ${currentUser.name} (${currentUser.role})`],
-      [`ช่วงเวลา: ${month ? THAI_MONTHS[Number(month) - 1] + ' ' + thaiYear : 'ปี พ.ศ. ' + thaiYear}`],
+      ['ใบสรุปค่าตอบแทนการทำงานล่วงเวลา (OT)'],    // แถว 1 — หัวเรื่อง
+      [`ชื่อ-นามสกุล: ${currentUser.name}  |  ตำแหน่ง: ${currentUser.role}  |  ช่วงเวลา: ${periodLabel}`],
       [],
-      ['วันที่', 'ประเภท OT', 'จำนวนชั่วโมง', 'อัตรา (บาท)', 'ยอดรวม (บาท)']
+      // --- หัวตาราง ---
+      ['ที่', 'วันที่', 'ประเภท OT', 'จำนวนชั่วโมง', 'อัตรา (บาท)', 'ยอดรวม (บาท)'],
     ];
 
-    // เรียงรายการจากเก่าไปใหม่
+    // รายการ (เรียงเก่าไปใหม่)
     const sorted = [...lastRecords].sort((a, b) => new Date(a.date) - new Date(b.date));
-    sorted.forEach(r => {
-      wsData.push([
-        r.date,
-        r.otType,
-        r.hours > 0 ? r.hours : '-',
-        r.rate,
-        r.total
-      ]);
+    sorted.forEach((r, i) => {
+      wsData.push([i + 1, r.date, r.otType, r.hours > 0 ? r.hours : '-', r.rate, r.total]);
     });
 
-    // แถวยอดรวม
+    // แถวว่าง + ยอดรวม
     wsData.push([]);
-    wsData.push(['', '', '', 'รวมทั้งหมด', lastGrandTotal]);
+    wsData.push(['', '', '', '', 'รวมทั้งหมด (บาท)', lastGrandTotal]);
 
-    // สร้างไฟล์ xlsx ด้วย SheetJS
-    const wb = XLSX.utils.book_new();
+    // --- แยกตามประเภท ---
+    wsData.push([]);
+    wsData.push(['สรุปตามประเภท OT']);
+    wsData.push(['ประเภท OT', 'จำนวนรายการ', 'ยอดรวม (บาท)']);
+
+    const typeMap = {};
+    lastRecords.forEach(r => {
+      if (!typeMap[r.otType]) typeMap[r.otType] = { total: 0, count: 0 };
+      typeMap[r.otType].total += Number(r.total) || 0;
+      typeMap[r.otType].count++;
+    });
+
+    Object.entries(typeMap)
+      .sort((a, b) => b[1].total - a[1].total)
+      .forEach(([type, val]) => {
+        wsData.push([type, val.count, val.total]);
+      });
+
     const ws = XLSX.utils.aoa_to_sheet(wsData);
 
-    // ปรับความกว้างคอลัมน์
+    // Merge หัวเรื่องให้ครอบคลุม 6 คอลัมน์
+    ws['!merges'] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 5 } }, // แถว 1 หัวเรื่อง
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 5 } }, // แถว 2 ข้อมูลพนักงาน
+    ];
+
+    // Style: ตัวหนา + สีพื้นหลัง header (SheetJS Community ไม่รองรับ style เต็ม แต่ใส่ merge ได้)
     ws['!cols'] = [
+      { wch: 5  }, // ที่
       { wch: 14 }, // วันที่
       { wch: 18 }, // ประเภท
       { wch: 16 }, // ชั่วโมง
@@ -615,7 +763,7 @@
       { wch: 18 }, // ยอดรวม
     ];
 
-    XLSX.utils.book_append_sheet(wb, ws, 'OT Summary');
+    XLSX.utils.book_append_sheet(wb, ws, 'สรุป OT');
     XLSX.writeFile(wb, fileName);
   }
 
