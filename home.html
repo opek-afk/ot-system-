@@ -273,6 +273,7 @@
     <div style="display:flex;gap:8px;align-items:center;">
       <a href="ot.html" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:#fff;padding:7px 14px;border-radius:7px;font-size:13px;text-decoration:none;">บันทึก OT</a>
       <a href="summary.html" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:#fff;padding:7px 14px;border-radius:7px;font-size:13px;text-decoration:none;">สรุป OT</a>
+      <a href="dashboard.html" id="dashboardBtn" style="display:none;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:#fff;padding:7px 14px;border-radius:7px;font-size:13px;text-decoration:none;">📈 Dashboard</a>
       <button class="logout-btn" id="logoutBtn">ออกจากระบบ</button>
     </div>
   </header>
@@ -360,6 +361,9 @@
     document.getElementById('appContent').style.display = 'block';
     document.getElementById('greetingName').textContent = 'สวัสดี ' + currentUser.name;
     document.getElementById('greetingRole').textContent = 'ตำแหน่ง: ' + currentUser.role;
+    if (currentUser.role === 'CM') {
+      document.getElementById('dashboardBtn').style.display = 'inline-block';
+    }
     startClock();
     loadStatus();
   }

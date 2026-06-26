@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard - ระบบคำนวณ OT</title>
+<style>
+  :root {
+    --navy: #1e3a5f;
+    --navy-dark: #15293f;
+    --teal: #2a9d8f;
+    --teal-dark: #21807a;
+    --bg: #f4f7f9;
+    --card: #ffffff;
+    --text: #1f2937;
+    --text-soft: #6b7280;
+    --border: #e2e8f0;
+    --radius: 12px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: 'Segoe UI', 'Noto Sans Thai', Tahoma, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+
+  header {
+    background: linear-gradient(120deg, var(--navy) 0%, var(--navy-dark) 100%);
+    color: #fff;
+    padding: 16px 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  header .title { display: flex; align-items: center; gap: 10px; }
+  header .icon { font-size: 22px; }
+  header h1 { font-size: 16px; margin: 0; font-weight: 700; }
+  header .sub { font-size: 12px; color: #b9c6d6; margin-top: 2px; }
+
+  .nav-btn {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.25);
+    color: #fff;
+    padding: 7px 14px;
+    border-radius: 7px;
+    font-size: 13px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+  }
+  .nav-btn:hover { background: rgba(255,255,255,0.22); }
+
+  main {
+    max-width: 900px;
+    margin: 26px auto;
+    padding: 0 18px 60px;
+  }
+
+  .filter-bar {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .filter-bar label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .filter-bar select {
+    padding: 8px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 7px;
+    font-size: 13px;
+    font-family: inherit;
+    background: #fff;
+    color: var(--text);
+  }
+
+  .filter-bar select:focus {
+    outline: none;
+    border-color: var(--teal);
+  }
+
+  /* Hero cards ด้านบน */
+  .hero-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+
+  .hero-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+  }
+
+  .hero-card.accent {
+    background: linear-gradient(120deg, var(--navy) 0%, var(--navy-dark) 100%);
+    color: #fff;
+  }
+
+  .hero-card .h-label {
+    font-size: 12.5px;
+    color: var(--text-soft);
+    margin-bottom: 6px;
+  }
+
+  .hero-card.accent .h-label { color: #b9c6d6; }
+
+  .hero-card .h-value {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--navy);
+    line-height: 1.1;
+  }
+
+  .hero-card.accent .h-value { color: #fff; }
+
+  .hero-card .h-unit {
+    font-size: 13px;
+    font-weight: 500;
+    margin-left: 3px;
+    color: var(--text-soft);
+  }
+
+  .hero-card.accent .h-unit { color: #8fb3d4; }
+
+  /* ตารางหลัก */
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 20px 20px 6px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+    overflow-x: auto;
+  }
+
+  .card h2 {
+    font-size: 14.5px;
+    color: var(--navy);
+    margin: 0 0 14px;
+    font-weight: 700;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    min-width: 500px;
+  }
+
+  thead tr {
+    background: var(--navy);
+    color: #fff;
+  }
+
+  thead th {
+    padding: 11px 14px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  thead th:not(:first-child) { text-align: right; }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+  }
+
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: #f8fafc; }
+
+  td {
+    padding: 12px 14px;
+    vertical-align: middle;
+  }
+
+  td:not(:first-child) { text-align: right; }
+
+  .td-name { font-weight: 600; }
+  .td-role {
+    font-size: 11.5px;
+    color: var(--text-soft);
+    margin-top: 2px;
+  }
+
+  .td-type { color: var(--text-soft); }
+  .td-total {
+    font-weight: 700;
+    color: var(--teal-dark);
+  }
+
+  tfoot tr {
+    background: #eef6f5;
+    border-top: 2px solid var(--teal);
+  }
+
+  tfoot td {
+    font-weight: 700;
+    color: var(--navy);
+    padding: 12px 14px;
+  }
+
+  tfoot td:not(:first-child) { text-align: right; }
+
+  .empty-box {
+    text-align: center;
+    padding: 30px 0;
+    color: var(--text-soft);
+    font-size: 13.5px;
+  }
+
+  .guard-box {
+    max-width: 420px;
+    margin: 80px auto;
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 32px 26px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  }
+  .guard-box h2 { color: var(--navy); margin-top: 0; }
+  .guard-box a {
+    display: inline-block;
+    margin-top: 14px;
+    background: var(--teal);
+    color: #fff;
+    text-decoration: none;
+    padding: 10px 20px;
+    border-radius: 7px;
+    font-weight: 700;
+    font-size: 14px;
+  }
+
+  @media (max-width: 600px) {
+    .hero-row { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="guard-box" id="guardBox" style="display:none;">
+  <h2>ไม่มีสิทธิ์เข้าถึงหน้านี้</h2>
+  <p style="color:var(--text-soft);font-size:14px;">หน้านี้สำหรับ CM เท่านั้น</p>
+  <a href="index.html">ไปหน้าเข้าสู่ระบบ</a>
+</div>
+
+<div id="appContent" style="display:none;">
+  <header>
+    <div class="title">
+      <span class="icon">📈</span>
+      <div>
+        <h1>Dashboard OT ทีม</h1>
+        <div class="sub" id="greetingSub"></div>
+      </div>
+    </div>
+    <a href="home.html" class="nav-btn">← หน้าหลัก</a>
+  </header>
+
+  <main>
+    <!-- ตัวกรอง -->
+    <div class="filter-bar">
+      <label>ดูข้อมูลเดือน:</label>
+      <select id="filterMonth"></select>
+      <select id="filterYear"></select>
+    </div>
+
+    <!-- Hero stats -->
+    <div class="hero-row">
+      <div class="hero-card accent">
+        <div class="h-label">ยอดรวม OT ทั้งทีม</div>
+        <div class="h-value"><span id="heroTotal">0</span><span class="h-unit">บาท</span></div>
+      </div>
+      <div class="hero-card">
+        <div class="h-label">จำนวนพนักงานที่ทำ OT</div>
+        <div class="h-value"><span id="heroCount">0</span><span class="h-unit">คน</span></div>
+      </div>
+    </div>
+
+    <!-- ตารางยอด OT รายคน -->
+    <div class="card">
+      <h2>ยอด OT แยกรายคน</h2>
+      <div id="tableWrap"><div class="empty-box">กำลังโหลด...</div></div>
+    </div>
+  </main>
+</div>
+
+<script>
+  const API_URL = 'https://script.google.com/macros/s/AKfycbwxUP6JF7JbJbIzAFPTnIt9LeWBfMe-qzwhn9j_7eEMHjJvlk0FKnh8wetF66Je7qJXaw/exec';
+
+  const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+
+  // ===== ตรวจสอบสิทธิ์ — เฉพาะ CM เท่านั้น =====
+  let currentUser = null;
+  try {
+    const stored = sessionStorage.getItem('otSystemUser');
+    currentUser = stored ? JSON.parse(stored) : null;
+  } catch(e) { currentUser = null; }
+
+  if (!currentUser || currentUser.role !== 'CM') {
+    document.getElementById('guardBox').style.display = 'block';
+  } else {
+    document.getElementById('appContent').style.display = 'block';
+    document.getElementById('greetingSub').textContent = currentUser.name + ' | CM';
+    initPage();
+  }
+
+  function initPage() {
+    setupFilters();
+    loadData();
+  }
+
+  function setupFilters() {
+    const now = new Date();
+    const monthSel = document.getElementById('filterMonth');
+    const yearSel = document.getElementById('filterYear');
+
+    THAI_MONTHS.forEach((m, i) => {
+      const opt = document.createElement('option');
+      opt.value = i + 1;
+      opt.textContent = m;
+      if (i + 1 === now.getMonth() + 1) opt.selected = true;
+      monthSel.appendChild(opt);
+    });
+
+    for (let y = now.getFullYear(); y >= now.getFullYear() - 2; y--) {
+      const opt = document.createElement('option');
+      opt.value = y;
+      opt.textContent = (y + 543) + ' (พ.ศ.)';
+      if (y === now.getFullYear()) opt.selected = true;
+      yearSel.appendChild(opt);
+    }
+
+    monthSel.addEventListener('change', loadData);
+    yearSel.addEventListener('change', loadData);
+  }
+
+  async function loadData() {
+    document.getElementById('heroTotal').textContent = '0';
+    document.getElementById('heroCount').textContent = '0';
+    document.getElementById('tableWrap').innerHTML = '<div class="empty-box">กำลังโหลด...</div>';
+
+    const month = document.getElementById('filterMonth').value;
+    const year = document.getElementById('filterYear').value;
+
+    try {
+      const result = await callApi({ action: 'getTeamOT', month, year });
+
+      if (!result.success) {
+        document.getElementById('tableWrap').innerHTML = '<div class="empty-box">โหลดข้อมูลไม่สำเร็จ</div>';
+        return;
+      }
+
+      renderDashboard(result);
+    } catch(err) {
+      document.getElementById('tableWrap').innerHTML = '<div class="empty-box">เชื่อมต่อไม่ได้ (' + escHtml(err.message) + ')</div>';
+    }
+  }
+
+  function renderDashboard(result) {
+    const team = result.team || [];
+    const allTypes = result.allTypes || [];
+
+    document.getElementById('heroTotal').textContent = formatMoney(result.grandTotal || 0);
+    document.getElementById('heroCount').textContent = team.length;
+
+    if (team.length === 0) {
+      document.getElementById('tableWrap').innerHTML = '<div class="empty-box">ไม่มีข้อมูล OT ในเดือนนี้</div>';
+      return;
+    }
+
+    // สร้างหัวตาราง
+    const typeHeaders = allTypes.map(t => `<th>${escHtml(t)}</th>`).join('');
+    const thead = `
+      <thead>
+        <tr>
+          <th>พนักงาน</th>
+          ${typeHeaders}
+          <th>รวม (บาท)</th>
+        </tr>
+      </thead>
+    `;
+
+    // สร้างแถวข้อมูลแต่ละคน
+    const rows = team.map(person => {
+      const typeCells = allTypes.map(t => {
+        const val = person.types[t] || 0;
+        return `<td class="td-type">${val > 0 ? formatMoney(val) : '—'}</td>`;
+      }).join('');
+
+      return `
+        <tr>
+          <td>
+            <div class="td-name">${escHtml(person.name)}</div>
+            <div class="td-role">${escHtml(person.role)}</div>
+          </td>
+          ${typeCells}
+          <td class="td-total">${formatMoney(person.grandTotal)}</td>
+        </tr>
+      `;
+    }).join('');
+
+    // แถวยอดรวม
+    const typeTotals = allTypes.map(t => {
+      const sum = team.reduce((s, p) => s + (p.types[t] || 0), 0);
+      return `<td>${formatMoney(sum)}</td>`;
+    }).join('');
+
+    const tfoot = `
+      <tfoot>
+        <tr>
+          <td>รวมทั้งหมด</td>
+          ${typeTotals}
+          <td>${formatMoney(result.grandTotal)}</td>
+        </tr>
+      </tfoot>
+    `;
+
+    document.getElementById('tableWrap').innerHTML = `
+      <table>
+        ${thead}
+        <tbody>${rows}</tbody>
+        ${tfoot}
+      </table>
+    `;
+  }
+
+  // ===== Helpers =====
+  async function callApi(payload) {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return res.json();
+  }
+
+  function formatMoney(num) {
+    return Number(num).toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  }
+
+  function escHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+</script>
+</body>
+</html>
