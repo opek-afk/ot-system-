@@ -319,6 +319,14 @@
     currentUser = null;
   }
 
+  // ===== ประกาศตัวแปร DOM และ state ทั้งหมดก่อน =====
+  const punchBtn = document.getElementById('punchBtn');
+  const statusLine = document.getElementById('statusLine');
+  const shiftPicker = document.getElementById('shiftPicker');
+  const shiftOptions = document.querySelectorAll('.shift-option');
+  let isCheckedIn = false;
+  let selectedShift = null;
+
   // ===== นาฬิกาเดินตลอดเวลา =====
   const THAI_DAYS = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
   const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
@@ -356,15 +364,6 @@
     sessionStorage.removeItem('otSystemUser');
     window.location.href = 'index.html';
   });
-
-  // ===== สถานะลงเวลา =====
-  let isCheckedIn = false;
-  let selectedShift = null;
-
-  const punchBtn = document.getElementById('punchBtn');
-  const statusLine = document.getElementById('statusLine');
-  const shiftPicker = document.getElementById('shiftPicker');
-  const shiftOptions = document.querySelectorAll('.shift-option');
 
   shiftOptions.forEach(btn => {
     btn.addEventListener('click', () => {
