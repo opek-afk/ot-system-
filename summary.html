@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>สรุป OT - ระบบคำนวณ OT</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   :root {
     --navy: #1e3a5f;
@@ -56,6 +57,49 @@
     display: inline-block;
   }
   .nav-btn:hover { background: rgba(255,255,255,0.22); }
+
+  .export-bar {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 14px 20px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .export-bar .label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-right: 4px;
+  }
+
+  .export-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: opacity 0.15s;
+  }
+  .export-btn:hover { opacity: 0.85; }
+
+  .export-btn.pdf { background: #e74c3c; color: #fff; }
+  .export-btn.excel { background: #1d6f42; color: #fff; }
+
+  /* CSS สำหรับตอนพิมพ์ PDF */
+  @media print {
+    header, .filter-bar, .export-bar, .nav-btn { display: none !important; }
+    body { background: #fff; }
+    .card { box-shadow: none; border: 1px solid #ddd; }
+    .total-hero { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    main { max-width: 100%; padding: 0; margin: 0; }
+  }
 
   main {
     max-width: 560px;
@@ -324,6 +368,13 @@
       </div>
     </div>
 
+    <!-- ปุ่ม Export -->
+    <div class="export-bar">
+      <span class="label">💾 Export:</span>
+      <button class="export-btn pdf" onclick="exportPDF()">📄 PDF</button>
+      <button class="export-btn excel" onclick="exportExcel()">📊 Excel (.xlsx)</button>
+    </div>
+
     <!-- ยอดรวมทั้งหมด -->
     <div class="total-hero" id="heroBox">
       <div class="period-label" id="heroLabel">กำลังโหลด...</div>
@@ -365,7 +416,9 @@
     initPage();
   }
 
-  let currentMode = 'month'; // 'month' หรือ 'year'
+  let currentMode = 'month';
+  let lastRecords = [];
+  let lastGrandTotal = 0;
 
   function initPage() {
     setupFilters();
@@ -429,6 +482,8 @@
       }
 
       renderAll(result.records || [], result.grandTotal || 0, month, year);
+      lastRecords = result.records || [];
+      lastGrandTotal = result.grandTotal || 0;
     } catch(err) {
       document.getElementById('typeWrap').innerHTML = '<div class="empty-box">เชื่อมต่อไม่ได้</div>';
     }
@@ -503,6 +558,65 @@
     }).join('');
 
     document.getElementById('detailWrap').innerHTML = detailHtml;
+  }
+
+  // ===== Export Functions =====
+
+  function exportPDF() {
+    window.print();
+  }
+
+  function exportExcel() {
+    if (!lastRecords || lastRecords.length === 0) {
+      alert('ไม่มีข้อมูลสำหรับ export ในช่วงเวลานี้ครับ');
+      return;
+    }
+
+    const month = currentMode === 'month' ? document.getElementById('filterMonth').value : null;
+    const year = document.getElementById('filterYear').value;
+    const thaiYear = Number(year) + 543;
+    const periodLabel = month ? `${THAI_MONTHS[Number(month) - 1]}_${thaiYear}` : `ปี_${thaiYear}`;
+    const fileName = `OT_${currentUser.name}_${periodLabel}.xlsx`;
+
+    // สร้าง worksheet data
+    const wsData = [
+      [`สรุป OT — ${currentUser.name} (${currentUser.role})`],
+      [`ช่วงเวลา: ${month ? THAI_MONTHS[Number(month) - 1] + ' ' + thaiYear : 'ปี พ.ศ. ' + thaiYear}`],
+      [],
+      ['วันที่', 'ประเภท OT', 'จำนวนชั่วโมง', 'อัตรา (บาท)', 'ยอดรวม (บาท)']
+    ];
+
+    // เรียงรายการจากเก่าไปใหม่
+    const sorted = [...lastRecords].sort((a, b) => new Date(a.date) - new Date(b.date));
+    sorted.forEach(r => {
+      wsData.push([
+        r.date,
+        r.otType,
+        r.hours > 0 ? r.hours : '-',
+        r.rate,
+        r.total
+      ]);
+    });
+
+    // แถวยอดรวม
+    wsData.push([]);
+    wsData.push(['', '', '', 'รวมทั้งหมด', lastGrandTotal]);
+
+    // สร้างไฟล์ xlsx ด้วย SheetJS
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+    // ปรับความกว้างคอลัมน์
+    ws['!cols'] = [
+      { wch: 14 }, // วันที่
+      { wch: 18 }, // ประเภท
+      { wch: 16 }, // ชั่วโมง
+      { wch: 16 }, // อัตรา
+      { wch: 18 }, // ยอดรวม
+    ];
+
+    XLSX.utils.book_append_sheet(wb, ws, 'OT Summary');
+    XLSX.writeFile(wb, fileName);
   }
 
   // ===== Helpers =====
