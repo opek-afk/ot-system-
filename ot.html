@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บันทึก OT - ระบบคำนวณ OT</title>
+<style>
+  :root {
+    --navy: #1e3a5f;
+    --navy-dark: #15293f;
+    --teal: #2a9d8f;
+    --teal-dark: #21807a;
+    --bg: #f4f7f9;
+    --card: #ffffff;
+    --text: #1f2937;
+    --text-soft: #6b7280;
+    --border: #e2e8f0;
+    --error: #d64545;
+    --error-bg: #fdecec;
+    --success: #1d8a4e;
+    --success-bg: #e7f7ee;
+    --radius: 12px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: 'Segoe UI', 'Noto Sans Thai', Tahoma, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+
+  header {
+    background: linear-gradient(120deg, var(--navy) 0%, var(--navy-dark) 100%);
+    color: #fff;
+    padding: 16px 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  header .title { display: flex; align-items: center; gap: 10px; }
+  header .icon { font-size: 22px; }
+  header h1 { font-size: 16px; margin: 0; font-weight: 700; }
+  header .sub { font-size: 12px; color: #b9c6d6; margin-top: 2px; }
+
+  .nav-btn {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.25);
+    color: #fff;
+    padding: 7px 14px;
+    border-radius: 7px;
+    font-size: 13px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+  }
+  .nav-btn:hover { background: rgba(255,255,255,0.22); }
+
+  main {
+    max-width: 520px;
+    margin: 26px auto;
+    padding: 0 18px 60px;
+  }
+
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 22px 20px 24px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+    margin-bottom: 18px;
+  }
+
+  .card h2 {
+    font-size: 15px;
+    color: var(--navy);
+    margin: 0 0 18px;
+    font-weight: 700;
+  }
+
+  .field { margin-bottom: 15px; }
+
+  .field label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .field input,
+  .field select {
+    width: 100%;
+    padding: 11px 13px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--text);
+    background: #fff;
+    font-family: inherit;
+    transition: border-color 0.15s;
+  }
+
+  .field input:focus,
+  .field select:focus {
+    outline: none;
+    border-color: var(--teal);
+    box-shadow: 0 0 0 3px rgba(42,157,143,0.12);
+  }
+
+  .field input:disabled,
+  .field select:disabled {
+    background: #f8fafc;
+    color: var(--text-soft);
+  }
+
+  .total-box {
+    background: linear-gradient(120deg, var(--navy) 0%, var(--navy-dark) 100%);
+    border-radius: 10px;
+    padding: 18px 20px;
+    text-align: center;
+    margin: 18px 0;
+    color: #fff;
+  }
+
+  .total-box .label {
+    font-size: 12.5px;
+    color: #b9c6d6;
+    margin-bottom: 6px;
+  }
+
+  .total-box .amount {
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+  }
+
+  .total-box .unit-note {
+    font-size: 12px;
+    color: #8fb3d4;
+    margin-top: 4px;
+  }
+
+  .submit-btn {
+    width: 100%;
+    padding: 14px 0;
+    border: none;
+    border-radius: 8px;
+    background: var(--teal);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    font-family: inherit;
+  }
+  .submit-btn:hover { opacity: 0.9; }
+  .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .msg {
+    margin-top: 12px;
+    padding: 10px 13px;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.5;
+    display: none;
+  }
+  .msg.show { display: block; }
+  .msg.error { background: var(--error-bg); color: var(--error); }
+  .msg.success { background: var(--success-bg); color: var(--success); }
+
+  .history-card { margin-top: 20px; }
+
+  .month-filter {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .month-filter select {
+    padding: 8px 10px;
+    border: 1.5px solid var(--border);
+    border-radius: 7px;
+    font-size: 13px;
+    font-family: inherit;
+    background: #fff;
+    color: var(--text);
+  }
+
+  .month-filter select:focus {
+    outline: none;
+    border-color: var(--teal);
+  }
+
+  .month-filter label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .history-empty {
+    font-size: 13px;
+    color: var(--text-soft);
+    text-align: center;
+    padding: 20px 0;
+  }
+
+  .ot-row {
+    border-bottom: 1px solid var(--border);
+    padding: 12px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .ot-row:last-child { border-bottom: none; }
+
+  .ot-row .left .type {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .ot-row .left .detail {
+    font-size: 12px;
+    color: var(--text-soft);
+    margin-top: 3px;
+  }
+
+  .ot-row .right {
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .ot-row .right .total {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--teal-dark);
+  }
+
+  .ot-row .right .date {
+    font-size: 12px;
+    color: var(--text-soft);
+    margin-top: 2px;
+  }
+
+  .grand-total-row {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 2px solid var(--navy);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .grand-total-row .label {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--navy);
+  }
+
+  .grand-total-row .amount {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--navy);
+  }
+
+  .guard-box {
+    max-width: 420px;
+    margin: 80px auto;
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 32px 26px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  }
+  .guard-box h2 { color: var(--navy); margin-top: 0; }
+  .guard-box a {
+    display: inline-block;
+    margin-top: 14px;
+    background: var(--teal);
+    color: #fff;
+    text-decoration: none;
+    padding: 10px 20px;
+    border-radius: 7px;
+    font-weight: 700;
+    font-size: 14px;
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: -2px;
+    margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="guard-box" id="guardBox" style="display:none;">
+  <h2>กรุณาเข้าสู่ระบบ</h2>
+  <p style="color:var(--text-soft);font-size:14px;">คุณยังไม่ได้เข้าสู่ระบบ หรือ session หมดอายุ</p>
+  <a href="index.html">ไปหน้าเข้าสู่ระบบ</a>
+</div>
+
+<div id="appContent" style="display:none;">
+  <header>
+    <div class="title">
+      <span class="icon">📋</span>
+      <div>
+        <h1>บันทึก OT</h1>
+        <div class="sub" id="greetingSub"></div>
+      </div>
+    </div>
+    <a href="home.html" class="nav-btn">← หน้าหลัก</a>
+  </header>
+
+  <main>
+    <!-- ฟอร์มบันทึก OT -->
+    <div class="card">
+      <h2>เพิ่มรายการ OT</h2>
+
+      <div class="field">
+        <label for="otDate">วันที่ทำ OT</label>
+        <input type="date" id="otDate">
+      </div>
+
+      <div class="field">
+        <label for="otType">ประเภท OT</label>
+        <select id="otType">
+          <option value="" disabled selected>กำลังโหลด...</option>
+        </select>
+      </div>
+
+      <div class="field" id="hoursField" style="display:none;">
+        <label for="otHours">จำนวนชั่วโมง</label>
+        <input type="number" id="otHours" min="0.5" step="0.5" placeholder="เช่น 2, 2.5">
+      </div>
+
+      <div class="field" id="customRateField" style="display:none;">
+        <label for="customRate">อัตรา (บาท)</label>
+        <input type="number" id="customRate" min="0" placeholder="กรอกอัตราที่ต้องการ">
+      </div>
+
+      <!-- กล่องแสดงยอดรวม -->
+      <div class="total-box">
+        <div class="label">ยอดรวม OT</div>
+        <div class="amount" id="totalDisplay">0</div>
+        <div class="unit-note" id="unitNote">เลือกประเภท OT ก่อน</div>
+      </div>
+
+      <button class="submit-btn" id="submitBtn">บันทึก OT</button>
+      <div class="msg" id="formMsg"></div>
+    </div>
+
+    <!-- ประวัติ OT -->
+    <div class="card history-card">
+      <h2>ประวัติ OT ของฉัน</h2>
+
+      <div class="month-filter">
+        <label>ดูเดือน:</label>
+        <select id="filterMonth"></select>
+        <select id="filterYear"></select>
+      </div>
+
+      <div id="historyWrap">
+        <div class="history-empty">กำลังโหลด...</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  const API_URL = 'https://script.google.com/macros/s/AKfycbwxUP6JF7JbJbIzAFPTnIt9LeWBfMe-qzwhn9j_7eEMHjJvlk0FKnh8wetF66Je7qJXaw/exec';
+
+  // ===== ตรวจสอบสิทธิ์ =====
+  let currentUser = null;
+  try {
+    const stored = sessionStorage.getItem('otSystemUser');
+    currentUser = stored ? JSON.parse(stored) : null;
+  } catch(e) { currentUser = null; }
+
+  if (!currentUser) {
+    document.getElementById('guardBox').style.display = 'block';
+  } else {
+    document.getElementById('appContent').style.display = 'block';
+    document.getElementById('greetingSub').textContent = currentUser.name + ' | ' + currentUser.role;
+    initPage();
+  }
+
+  // ===== ตั้งค่าหน้าเพจ =====
+  let rates = []; // เก็บอัตรา OT ที่ดึงมา
+
+  async function initPage() {
+    setDefaultDate();
+    setupMonthFilter();
+    await loadRates();
+    await loadHistory();
+  }
+
+  function setDefaultDate() {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    document.getElementById('otDate').value = `${yyyy}-${mm}-${dd}`;
+  }
+
+  // ===== โหลดอัตรา OT ตาม role =====
+  async function loadRates() {
+    try {
+      const result = await callApi({ action: 'getOTRates', role: currentUser.role });
+      if (!result.success) return;
+
+      rates = result.rates;
+      const select = document.getElementById('otType');
+      select.innerHTML = '<option value="" disabled selected>เลือกประเภท OT</option>';
+
+      rates.forEach(r => {
+        const opt = document.createElement('option');
+        opt.value = r.otType;
+        opt.textContent = r.otType + (r.unit !== 'custom' ? ` (${formatMoney(r.rate)} บาท/${r.unit === 'per_hour' ? 'ชม.' : 'ครั้ง'})` : '');
+        select.appendChild(opt);
+      });
+    } catch(err) {
+      document.getElementById('otType').innerHTML = '<option value="">โหลดไม่สำเร็จ</option>';
+    }
+  }
+
+  // ===== เมื่อเลือกประเภท OT =====
+  document.getElementById('otType').addEventListener('change', updateFields);
+  document.getElementById('otHours').addEventListener('input', calculateTotal);
+  document.getElementById('customRate').addEventListener('input', calculateTotal);
+
+  function updateFields() {
+    const selectedType = document.getElementById('otType').value;
+    const rate = rates.find(r => r.otType === selectedType);
+    if (!rate) return;
+
+    const hoursField = document.getElementById('hoursField');
+    const customRateField = document.getElementById('customRateField');
+
+    if (rate.unit === 'per_hour') {
+      hoursField.style.display = 'block';
+      customRateField.style.display = 'none';
+      document.getElementById('unitNote').textContent = `${formatMoney(rate.rate)} บาท × จำนวนชั่วโมงที่กรอก`;
+    } else if (rate.unit === 'custom') {
+      hoursField.style.display = 'none';
+      customRateField.style.display = 'block';
+      document.getElementById('unitNote').textContent = 'กรอกอัตราและจำนวนชั่วโมงเอง';
+      hoursField.style.display = 'block';
+    } else {
+      hoursField.style.display = 'none';
+      customRateField.style.display = 'none';
+      document.getElementById('unitNote').textContent = `คิดต่อครั้ง = ${formatMoney(rate.rate)} บาท`;
+    }
+
+    calculateTotal();
+  }
+
+  function calculateTotal() {
+    const selectedType = document.getElementById('otType').value;
+    const rate = rates.find(r => r.otType === selectedType);
+    if (!rate) {
+      document.getElementById('totalDisplay').textContent = '0';
+      return;
+    }
+
+    let total = 0;
+    if (rate.unit === 'per_hour') {
+      const hours = parseFloat(document.getElementById('otHours').value) || 0;
+      total = rate.rate * hours;
+    } else if (rate.unit === 'custom') {
+      const customRate = parseFloat(document.getElementById('customRate').value) || 0;
+      const hours = parseFloat(document.getElementById('otHours').value) || 1;
+      total = customRate * hours;
+    } else {
+      total = rate.rate;
+    }
+
+    document.getElementById('totalDisplay').textContent = formatMoney(total);
+  }
+
+  // ===== บันทึก OT =====
+  document.getElementById('submitBtn').addEventListener('click', async () => {
+    hideMsg();
+
+    const date = document.getElementById('otDate').value;
+    const otType = document.getElementById('otType').value;
+    const rate = rates.find(r => r.otType === otType);
+
+    if (!date || !otType || !rate) {
+      showMsg('กรุณากรอกข้อมูลให้ครบ', 'error');
+      return;
+    }
+
+    let hours = 0, rateAmount = 0, total = 0;
+
+    if (rate.unit === 'per_hour') {
+      hours = parseFloat(document.getElementById('otHours').value) || 0;
+      if (hours <= 0) { showMsg('กรุณากรอกจำนวนชั่วโมง', 'error'); return; }
+      rateAmount = rate.rate;
+      total = rateAmount * hours;
+    } else if (rate.unit === 'custom') {
+      rateAmount = parseFloat(document.getElementById('customRate').value) || 0;
+      hours = parseFloat(document.getElementById('otHours').value) || 1;
+      if (rateAmount <= 0) { showMsg('กรุณากรอกอัตรา OT', 'error'); return; }
+      total = rateAmount * hours;
+    } else {
+      rateAmount = rate.rate;
+      total = rateAmount;
+    }
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>กำลังบันทึก...';
+
+    try {
+      const result = await callApi({
+        action: 'saveOT',
+        userId: currentUser.id,
+        date: date,
+        otType: otType,
+        hours: hours,
+        rate: rateAmount,
+        total: total
+      });
+
+      if (result.success) {
+        showMsg('บันทึก OT สำเร็จ! ยอด ' + formatMoney(total) + ' บาท', 'success');
+        // รีเซ็ตฟอร์ม
+        document.getElementById('otType').value = '';
+        document.getElementById('otHours').value = '';
+        document.getElementById('customRate').value = '';
+        document.getElementById('hoursField').style.display = 'none';
+        document.getElementById('customRateField').style.display = 'none';
+        document.getElementById('totalDisplay').textContent = '0';
+        document.getElementById('unitNote').textContent = 'เลือกประเภท OT ก่อน';
+        setDefaultDate();
+        await loadHistory();
+      } else {
+        showMsg(result.message || 'บันทึกไม่สำเร็จ', 'error');
+      }
+    } catch(err) {
+      showMsg('เชื่อมต่อระบบไม่ได้ (' + err.message + ')', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'บันทึก OT';
+    }
+  });
+
+  // ===== Month Filter =====
+  function setupMonthFilter() {
+    const now = new Date();
+    const monthSel = document.getElementById('filterMonth');
+    const yearSel = document.getElementById('filterYear');
+    const months = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+
+    months.forEach((m, i) => {
+      const opt = document.createElement('option');
+      opt.value = i + 1;
+      opt.textContent = m;
+      if (i + 1 === now.getMonth() + 1) opt.selected = true;
+      monthSel.appendChild(opt);
+    });
+
+    for (let y = now.getFullYear(); y >= now.getFullYear() - 2; y--) {
+      const opt = document.createElement('option');
+      opt.value = y;
+      opt.textContent = y + 543; // แปลงเป็น พ.ศ.
+      if (y === now.getFullYear()) opt.selected = true;
+      yearSel.appendChild(opt);
+    }
+
+    monthSel.addEventListener('change', loadHistory);
+    yearSel.addEventListener('change', loadHistory);
+  }
+
+  async function loadHistory() {
+    const month = document.getElementById('filterMonth').value;
+    const year = document.getElementById('filterYear').value;
+    const wrap = document.getElementById('historyWrap');
+    wrap.innerHTML = '<div class="history-empty">กำลังโหลด...</div>';
+
+    try {
+      const result = await callApi({
+        action: 'getMyOT',
+        userId: currentUser.id,
+        month: month,
+        year: year
+      });
+
+      if (!result.success) {
+        wrap.innerHTML = '<div class="history-empty">โหลดไม่สำเร็จ</div>';
+        return;
+      }
+
+      const records = result.records || [];
+      if (records.length === 0) {
+        wrap.innerHTML = '<div class="history-empty">ไม่มีรายการ OT ในเดือนนี้</div>';
+        return;
+      }
+
+      const rowsHtml = records.map(r => `
+        <div class="ot-row">
+          <div class="left">
+            <div class="type">${escHtml(r.otType)}</div>
+            <div class="detail">${r.hours > 0 ? r.hours + ' ชม. × ' + formatMoney(r.rate) + ' บาท' : formatMoney(r.rate) + ' บาท/ครั้ง'}</div>
+          </div>
+          <div class="right">
+            <div class="total">${formatMoney(r.total)} บาท</div>
+            <div class="date">${r.date}</div>
+          </div>
+        </div>
+      `).join('');
+
+      const grandTotalHtml = `
+        <div class="grand-total-row">
+          <div class="label">รวมทั้งหมด</div>
+          <div class="amount">${formatMoney(result.grandTotal)} บาท</div>
+        </div>
+      `;
+
+      wrap.innerHTML = rowsHtml + grandTotalHtml;
+    } catch(err) {
+      wrap.innerHTML = '<div class="history-empty">เชื่อมต่อไม่ได้ (' + escHtml(err.message) + ')</div>';
+    }
+  }
+
+  // ===== Helpers =====
+  async function callApi(payload) {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return res.json();
+  }
+
+  function formatMoney(num) {
+    return Number(num).toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  }
+
+  function escHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function showMsg(text, type) {
+    const el = document.getElementById('formMsg');
+    el.textContent = text;
+    el.className = 'msg show ' + type;
+  }
+
+  function hideMsg() {
+    const el = document.getElementById('formMsg');
+    el.className = 'msg';
+    el.textContent = '';
+  }
+</script>
+</body>
+</html>
