@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard - ระบบคำนวณ OT</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   :root {
     --navy: #1e3a5f;
@@ -16,6 +17,47 @@
     --text-soft: #6b7280;
     --border: #e2e8f0;
     --radius: 12px;
+  }
+
+  .export-bar {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 14px 20px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .export-bar .label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-right: 4px;
+  }
+
+  .export-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: opacity 0.15s;
+  }
+  .export-btn:hover { opacity: 0.85; }
+  .export-btn.pdf { background: #e74c3c; color: #fff; }
+  .export-btn.excel { background: #1d6f42; color: #fff; }
+
+  @media print {
+    header, .filter-bar, .export-bar, .hero-row, .nav-btn { display: none !important; }
+    body { background: #fff; }
+    .card { box-shadow: none; border: 1px solid #ddd; }
+    main { max-width: 100%; padding: 0; margin: 0; }
+    table { font-size: 11pt; }
   }
 
   * { box-sizing: border-box; }
@@ -295,6 +337,13 @@
       </div>
     </div>
 
+    <!-- ปุ่ม Export -->
+    <div class="export-bar">
+      <span class="label">💾 Export:</span>
+      <button class="export-btn pdf" onclick="exportPDF()">📄 PDF</button>
+      <button class="export-btn excel" onclick="exportExcel()">📊 Excel (.xlsx)</button>
+    </div>
+
     <!-- ตารางยอด OT รายคน -->
     <div class="card">
       <h2>ยอด OT แยกรายคน</h2>
@@ -353,6 +402,8 @@
     yearSel.addEventListener('change', loadData);
   }
 
+  let lastResult = null; // เก็บข้อมูลล่าสุดไว้ใช้ตอน export
+
   async function loadData() {
     document.getElementById('heroTotal').textContent = '0';
     document.getElementById('heroCount').textContent = '0';
@@ -369,6 +420,7 @@
         return;
       }
 
+      lastResult = result;
       renderDashboard(result);
     } catch(err) {
       document.getElementById('tableWrap').innerHTML = '<div class="empty-box">เชื่อมต่อไม่ได้ (' + escHtml(err.message) + ')</div>';
@@ -441,6 +493,178 @@
         ${tfoot}
       </table>
     `;
+  }
+
+  // ===== Export Functions =====
+
+  function getPeriodLabel() {
+    const month = document.getElementById('filterMonth').value;
+    const year = document.getElementById('filterYear').value;
+    const thaiYear = Number(year) + 543;
+    const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+    return `${THAI_MONTHS[Number(month) - 1]} พ.ศ. ${thaiYear}`;
+  }
+
+  function exportPDF() {
+    if (!lastResult || !lastResult.team || lastResult.team.length === 0) {
+      alert('ไม่มีข้อมูลสำหรับ export ในช่วงเวลานี้ครับ');
+      return;
+    }
+
+    const periodLabel = getPeriodLabel();
+    const team = lastResult.team;
+    const allTypes = lastResult.allTypes || [];
+
+    const typeHeaders = allTypes.map(t => `<th>${escHtml(t)}</th>`).join('');
+    const rows = team.map((p, i) => {
+      const typeCells = allTypes.map(t => {
+        const val = p.types[t] || 0;
+        return `<td style="text-align:right">${val > 0 ? formatMoney(val) : '—'}</td>`;
+      }).join('');
+      return `
+        <tr style="${i % 2 === 1 ? 'background:#f4f9f8;' : ''}">
+          <td>${escHtml(p.name)}</td>
+          <td style="color:#555">${escHtml(p.role)}</td>
+          ${typeCells}
+          <td style="text-align:right;font-weight:700;">${formatMoney(p.grandTotal)}</td>
+        </tr>`;
+    }).join('');
+
+    const typeTotals = allTypes.map(t => {
+      const sum = team.reduce((s, p) => s + (p.types[t] || 0), 0);
+      return `<td style="text-align:right">${formatMoney(sum)}</td>`;
+    }).join('');
+
+    const printContent = `<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>Dashboard OT ทีม — ${periodLabel}</title>
+<style>
+  @page { size: A4 landscape; margin: 1.5cm 2cm; }
+  body { font-family: 'TH Sarabun New','Sarabun','Noto Sans Thai',Arial,sans-serif; font-size: 13pt; color: #000; margin: 0; }
+  .doc-header { text-align: center; margin-bottom: 16px; border-bottom: 2px solid #2a9d8f; padding-bottom: 10px; }
+  .doc-header h1 { font-size: 17pt; font-weight: bold; margin: 0 0 4px; color: #1e3a5f; }
+  .doc-header p { font-size: 12pt; margin: 2px 0; color: #444; }
+  .info-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 11pt; color: #333; }
+  table { width: 100%; border-collapse: collapse; font-size: 11pt; }
+  thead tr { background-color: #1e3a5f; color: #fff; }
+  thead th { padding: 8px 10px; text-align: left; font-weight: bold; }
+  thead th:not(:first-child):not(:nth-child(2)) { text-align: right; }
+  tbody td { padding: 7px 10px; border-bottom: 1px solid #ddd; }
+  tfoot tr { background-color: #e8f5f3; font-weight: bold; border-top: 2px solid #2a9d8f; }
+  tfoot td { padding: 8px 10px; }
+  .grand-box { margin-top: 14px; padding: 12px 16px; background: #1e3a5f; color: #fff; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; }
+  .grand-box .lbl { font-size: 12pt; }
+  .grand-box .amt { font-size: 17pt; font-weight: bold; }
+  .footer { margin-top: 20px; font-size: 10pt; color: #888; text-align: center; }
+  .sign-area { margin-top: 36px; display: flex; justify-content: flex-end; }
+  .sign-box { text-align: center; width: 200px; }
+  .sign-box .line { border-top: 1px solid #000; margin-top: 46px; padding-top: 4px; font-size: 11pt; }
+</style>
+</head>
+<body>
+  <div class="doc-header">
+    <h1>รายงานสรุปค่าตอบแทนการทำงานล่วงเวลา (OT) ทีม</h1>
+    <p>Pimanjai Homecare &nbsp;|&nbsp; ช่วงเวลา: ${periodLabel}</p>
+  </div>
+  <div class="info-row">
+    <span>ผู้ออกรายงาน: <strong>${escHtml(currentUser.name)}</strong> (CM)</span>
+    <span>จำนวนพนักงาน: <strong>${team.length} คน</strong></span>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>ชื่อ-นามสกุล</th>
+        <th>ตำแหน่ง</th>
+        ${typeHeaders}
+        <th style="text-align:right">รวม (บาท)</th>
+      </tr>
+    </thead>
+    <tbody>${rows}</tbody>
+    <tfoot>
+      <tr>
+        <td colspan="2">รวมทั้งหมด</td>
+        ${typeTotals}
+        <td style="text-align:right">${formatMoney(lastResult.grandTotal)}</td>
+      </tr>
+    </tfoot>
+  </table>
+  <div class="grand-box">
+    <span class="lbl">ยอดรวม OT ทั้งทีม — ${periodLabel}</span>
+    <span class="amt">${formatMoney(lastResult.grandTotal)} บาท</span>
+  </div>
+  <div class="sign-area">
+    <div class="sign-box">
+      <div class="line">ลายมือชื่อผู้อนุมัติ<br>(${escHtml(currentUser.name)})</div>
+    </div>
+  </div>
+  <div class="footer">เอกสารนี้ออกโดยระบบคำนวณ OT Pimanjai Homecare — วันที่พิมพ์: ${new Date().toLocaleDateString('th-TH', {year:'numeric',month:'long',day:'numeric'})}</div>
+  <script>window.onload = function(){ window.print(); }<\/script>
+</body>
+</html>`;
+
+    const win = window.open('', '_blank');
+    win.document.write(printContent);
+    win.document.close();
+  }
+
+  function exportExcel() {
+    if (!lastResult || !lastResult.team || lastResult.team.length === 0) {
+      alert('ไม่มีข้อมูลสำหรับ export ในช่วงเวลานี้ครับ');
+      return;
+    }
+
+    const periodLabel = getPeriodLabel();
+    const month = document.getElementById('filterMonth').value;
+    const year = document.getElementById('filterYear').value;
+    const thaiYear = Number(year) + 543;
+    const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+    const fileName = `OT_ทีม_${THAI_MONTHS[Number(month)-1]}_${thaiYear}.xlsx`;
+
+    const team = lastResult.team;
+    const allTypes = lastResult.allTypes || [];
+
+    // หัวเรื่อง
+    const wsData = [
+      ['รายงานสรุปค่าตอบแทนการทำงานล่วงเวลา (OT) ทีม'],
+      [`Pimanjai Homecare  |  ช่วงเวลา: ${periodLabel}  |  ผู้ออกรายงาน: ${currentUser.name} (CM)`],
+      [],
+      // header ตาราง
+      ['ชื่อ-นามสกุล', 'ตำแหน่ง', ...allTypes, 'รวม (บาท)']
+    ];
+
+    // แถวข้อมูลแต่ละคน
+    team.forEach(p => {
+      const typeCols = allTypes.map(t => p.types[t] || 0);
+      wsData.push([p.name, p.role, ...typeCols, p.grandTotal]);
+    });
+
+    // แถวยอดรวม
+    wsData.push([]);
+    const typeTotals = allTypes.map(t => team.reduce((s, p) => s + (p.types[t] || 0), 0));
+    wsData.push(['รวมทั้งหมด', '', ...typeTotals, lastResult.grandTotal]);
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+    // Merge หัวเรื่อง
+    const totalCols = 2 + allTypes.length + 1;
+    ws['!merges'] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: totalCols - 1 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: totalCols - 1 } },
+    ];
+
+    // ความกว้างคอลัมน์
+    ws['!cols'] = [
+      { wch: 22 }, // ชื่อ
+      { wch: 14 }, // ตำแหน่ง
+      ...allTypes.map(() => ({ wch: 14 })),
+      { wch: 16 }, // รวม
+    ];
+
+    XLSX.utils.book_append_sheet(wb, ws, 'OT ทีม');
+    XLSX.writeFile(wb, fileName);
   }
 
   // ===== Helpers =====
