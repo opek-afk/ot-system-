@@ -483,6 +483,8 @@
       btn.textContent = 'ส่งคำขอรีเซ็ต';
     }
   });
+
+  function setLoading(btn, isLoading, label) {
     btn.disabled = isLoading;
     btn.innerHTML = isLoading ? '<span class="spinner"></span>' + label : label;
   }
