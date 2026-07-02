@@ -284,6 +284,7 @@
   </header>
 
   <main>
+    <!-- รายชื่อรออนุมัติ -->
     <div class="section-head">
       <h2>รายชื่อรออนุมัติ <span class="count-badge" id="countBadge">0</span></h2>
       <button class="refresh-btn" id="refreshBtn">↻ รีเฟรช</button>
@@ -291,6 +292,15 @@
 
     <div id="listWrap">
       <div class="state-box" id="loadingBox">กำลังโหลดรายชื่อ...</div>
+    </div>
+
+    <!-- รายชื่อขอรีเซ็ตรหัสผ่าน -->
+    <div class="section-head" style="margin-top:28px;">
+      <h2>🔑 คำขอรีเซ็ตรหัสผ่าน <span class="count-badge" id="resetCountBadge">0</span></h2>
+    </div>
+
+    <div id="resetListWrap">
+      <div class="state-box">กำลังโหลด...</div>
     </div>
   </main>
 </div>
@@ -317,6 +327,7 @@
     document.getElementById('appContent').style.display = 'block';
     document.getElementById('whoAmI').textContent = 'Admin: ' + currentUser.name;
     loadPendingUsers();
+    loadPendingResets();
   }
 
   document.getElementById('logoutBtn').addEventListener('click', () => {
@@ -324,7 +335,101 @@
     window.location.href = 'index.html';
   });
 
-  document.getElementById('refreshBtn').addEventListener('click', loadPendingUsers);
+  document.getElementById('refreshBtn').addEventListener('click', () => {
+    loadPendingUsers();
+    loadPendingResets();
+  });
+
+  // ===== โหลดรายชื่อขอรีเซ็ตรหัสผ่าน =====
+  async function loadPendingResets() {
+    const wrap = document.getElementById('resetListWrap');
+    wrap.innerHTML = '<div class="state-box">กำลังโหลด...</div>';
+
+    try {
+      const result = await callApi({
+        action: 'getPendingResets',
+        adminUsername: currentUser.username
+      });
+
+      if (!result.success) {
+        wrap.innerHTML = '<div class="state-box">โหลดไม่สำเร็จ</div>';
+        return;
+      }
+
+      const list = result.pendingResets || [];
+      document.getElementById('resetCountBadge').textContent = list.length;
+
+      if (list.length === 0) {
+        wrap.innerHTML = '<div class="state-box">ไม่มีคำขอรีเซ็ตรหัสผ่านในตอนนี้</div>';
+        return;
+      }
+
+      const html = '<div class="card-list">' + list.map(u => `
+        <div class="pending-card">
+          <div class="row1">
+            <div>
+              <div class="name">${escapeHtml(u.name)}</div>
+              <div class="meta">username: ${escapeHtml(u.username)} • ตำแหน่ง: <span class="role-pill">${escapeHtml(u.role)}</span></div>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn btn-approve" id="resetBtn-${u.id}">🔑 รีเซ็ตรหัสผ่าน</button>
+          </div>
+          <div id="resetResult-${u.id}" style="margin-top:10px;display:none;"></div>
+        </div>
+      `).join('') + '</div>';
+
+      wrap.innerHTML = html;
+
+      // ผูก event ปุ่มรีเซ็ต
+      list.forEach(u => {
+        document.getElementById('resetBtn-' + u.id).addEventListener('click', () => {
+          handleReset(u.id, u.name, u.username);
+        });
+      });
+
+    } catch (err) {
+      wrap.innerHTML = '<div class="state-box">เชื่อมต่อไม่ได้</div>';
+    }
+  }
+
+  async function handleReset(userId, name, username) {
+    const btn = document.getElementById('resetBtn-' + userId);
+    const resultDiv = document.getElementById('resetResult-' + userId);
+    btn.disabled = true;
+    btn.textContent = 'กำลังรีเซ็ต...';
+
+    try {
+      const result = await callApi({
+        action: 'resetPasswordByAdmin',
+        adminUsername: currentUser.username,
+        targetUserId: userId
+      });
+
+      if (result.success) {
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = `
+          <div style="background:#e7f7ee;border-radius:8px;padding:12px 14px;font-size:13px;color:#1d8a4e;">
+            ✅ รีเซ็ตสำเร็จ!<br>
+            <strong>รหัสผ่านชั่วคราวของ ${escapeHtml(name)}:</strong><br>
+            <span style="font-size:20px;font-weight:800;letter-spacing:2px;color:#1e3a5f;">${escapeHtml(result.tempPassword)}</span><br>
+            <span style="font-size:11px;color:#6b7280;margin-top:4px;display:block;">📌 กรุณาแจ้งรหัสนี้ให้พนักงานทาง LINE แล้วแนะนำให้เปลี่ยนรหัสหลัง login</span>
+          </div>
+        `;
+        btn.style.display = 'none';
+        // รีโหลดหลัง 5 วินาที
+        setTimeout(() => loadPendingResets(), 5000);
+      } else {
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = `<div style="background:#fdecec;border-radius:8px;padding:10px 14px;font-size:13px;color:#d64545;">❌ ${escapeHtml(result.message)}</div>`;
+        btn.disabled = false;
+        btn.textContent = '🔑 รีเซ็ตรหัสผ่าน';
+      }
+    } catch (err) {
+      btn.disabled = false;
+      btn.textContent = '🔑 รีเซ็ตรหัสผ่าน';
+    }
+  }
 
   // ===== โหลดรายชื่อรออนุมัติ =====
   async function loadPendingUsers() {
